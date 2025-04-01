@@ -1,43 +1,46 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
-from config import TELEGRAM_BOT_TOKEN, COMMAND_DESCRIPTIONS
-from bot.handlers import (
-    start_command, help_command, fb_command, mpw_command, wh_command,
-    ptd_command, kol_command, td_command, ath_command, dw_command,
-    th_command, track_command, pw_command, hnw_command, premium_command,
-    usage_command, button_callback
+from config import TELEGRAM_TOKEN, COMMAND_DESCRIPTIONS
+from bot.handlers.command_handlers import (
+    start_command, help_command, fb_command, mpw_command, 
+    wh_command, ptd_command, kol_command, td_command,
+    ath_command, dw_command, th_command, track_command,
+    pw_command, hnw_command, premium_command
 )
-from bot.middleware import rate_limiter
+from bot.handlers.callback_handlers import button_callback
+from bot.handlers.error_handlers import error_handler
+from data.database import init_database
 
 def create_bot():
-    """Create and configure the bot with all handlers"""
-    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    # Initialize the database connection
+    init_database()
+    
+    # Create the application
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     
     # Add command handlers
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
-    
-    # Add feature command handlers with rate limiting middleware
-    application.add_handler(CommandHandler("fb", rate_limiter(fb_command)))
-    application.add_handler(CommandHandler("mpw", rate_limiter(mpw_command)))
-    application.add_handler(CommandHandler("wh", rate_limiter(wh_command)))
-    application.add_handler(CommandHandler("ptd", rate_limiter(ptd_command)))
-    application.add_handler(CommandHandler("kol", rate_limiter(kol_command)))
-    application.add_handler(CommandHandler("td", rate_limiter(td_command)))
-    application.add_handler(CommandHandler("ath", rate_limiter(ath_command)))
-    application.add_handler(CommandHandler("dw", rate_limiter(dw_command)))
-    application.add_handler(CommandHandler("th", rate_limiter(th_command)))
-    application.add_handler(CommandHandler("track", rate_limiter(track_command)))
-    application.add_handler(CommandHandler("pw", rate_limiter(pw_command)))
-    application.add_handler(CommandHandler("hnw", rate_limiter(hnw_command)))
-    
-    # Add utility commands
+    application.add_handler(CommandHandler("fb", fb_command))
+    application.add_handler(CommandHandler("mpw", mpw_command))
+    application.add_handler(CommandHandler("wh", wh_command))
+    application.add_handler(CommandHandler("ptd", ptd_command))
+    application.add_handler(CommandHandler("kol", kol_command))
+    application.add_handler(CommandHandler("td", td_command))
+    application.add_handler(CommandHandler("ath", ath_command))
+    application.add_handler(CommandHandler("dw", dw_command))
+    application.add_handler(CommandHandler("th", th_command))
+    application.add_handler(CommandHandler("track", track_command))
+    application.add_handler(CommandHandler("pw", pw_command))
+    application.add_handler(CommandHandler("hnw", hnw_command))
     application.add_handler(CommandHandler("premium", premium_command))
-    application.add_handler(CommandHandler("usage", usage_command))
     
-    # Add callback query handler for buttons
+    # Add callback query handler
     application.add_handler(CallbackQueryHandler(button_callback))
     
-    # Set bot commands in the menu
+    # Add error handler
+    application.add_error_handler(error_handler)
+    
+    # Set commands for the bot menu
     commands = [
         (command, description) for command, description in COMMAND_DESCRIPTIONS.items()
     ]
