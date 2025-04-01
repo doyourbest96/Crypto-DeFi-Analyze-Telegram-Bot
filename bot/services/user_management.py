@@ -6,7 +6,7 @@ from data.models import User
 from data.database import (
     get_user, save_user, update_user_activity, get_user_scan_count,
     increment_user_scan_count, set_premium_status as db_set_premium_status,
-    cleanup_expired_premium
+    cleanup_expired_premium, get_user_counts, set_user_admin_status as db_set_user_admin_status
 )
 
 async def get_or_create_user(user_id: int, username: Optional[str] = None, 
@@ -69,7 +69,7 @@ async def extend_premium_subscription(user_id: int, additional_days: int) -> boo
         logging.error(f"Error extending premium subscription for user {user_id}: {e}")
         return False
 
-async def check_rate_limit(user_id: int, scan_type: str, limit: int) -> Tuple[bool, int]:
+async def check_rate_limit_service(user_id: int, scan_type: str, limit: int) -> Tuple[bool, int]:
     """
     Check if user has exceeded their daily scan limit
     Returns (has_reached_limit, current_count)
@@ -260,15 +260,9 @@ async def process_referral(referrer_id: int, referred_id: int) -> bool:
         logging.error(f"Error processing referral from {referrer_id} to {referred_id}: {e}")
         return False
 
-async def get_admin_users() -> List[User]:
-    """Get all admin users"""
-    from data.database import get_admin_users as db_get_admin_users
-    return db_get_admin_users()
-
 async def set_user_admin_status(user_id: int, is_admin: bool) -> bool:
     """Set a user's admin status"""
     try:
-        from data.database import set_user_admin_status as db_set_user_admin_status
         db_set_user_admin_status(user_id, is_admin)
         return True
     except Exception as e:
@@ -278,7 +272,6 @@ async def set_user_admin_status(user_id: int, is_admin: bool) -> bool:
 async def get_user_count_stats() -> Dict[str, int]:
     """Get user count statistics"""
     try:
-        from data.database import get_user_counts
         return get_user_counts()
     except Exception as e:
         logging.error(f"Error getting user count stats: {e}")

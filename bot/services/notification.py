@@ -9,7 +9,8 @@ from telegram.constants import ParseMode
 
 from .blockchain import get_token_info, get_wallet_info
 from data.models import TrackingSubscription, User
-from data.database import get_user, get_user_tracking_subscriptions
+from data.database import get_user, get_user_tracking_subscriptions, get_all_users, get_users_with_expiring_premium, get_all_active_tracking_subscriptions
+
 
 # Initialize bot instance
 # This would be properly initialized in the main application
@@ -40,8 +41,7 @@ async def send_notification(user_id: int, message: str, parse_mode: Optional[str
 
 async def process_tracking_alerts() -> None:
     """Process all tracking subscriptions and send alerts if needed"""
-    from data.database import get_all_active_tracking_subscriptions
-    
+
     try:
         # Get all active tracking subscriptions
         subscriptions = get_all_active_tracking_subscriptions()
@@ -437,8 +437,6 @@ async def send_daily_summary(user: User) -> None:
         if not user.is_premium:
             return
             
-        # Get user's tracking subscriptions
-        from data.database import get_user_tracking_subscriptions
         subscriptions = get_user_tracking_subscriptions(user.user_id)
         
         if not subscriptions:
@@ -494,8 +492,6 @@ async def send_daily_summary(user: User) -> None:
 async def check_and_send_premium_reminders() -> None:
     """Check for users with expiring premium and send reminders"""
     try:
-        from data.database import get_users_with_expiring_premium
-        
         # Get users whose premium is expiring soon (7, 3, or 1 day)
         expiring_users = get_users_with_expiring_premium([7, 3, 1])
         
@@ -517,8 +513,6 @@ async def check_and_send_premium_reminders() -> None:
 async def send_new_feature_announcement(feature_name: str, feature_description: str) -> None:
     """Send an announcement about a new feature to all users"""
     try:
-        from data.database import get_all_users
-        
         users = get_all_users()
         
         # Create inline keyboard for actions

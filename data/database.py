@@ -257,6 +257,15 @@ def get_user_tracking_subscriptions(user_id: int) -> List[TrackingSubscription]:
     })
     return [TrackingSubscription.from_dict(sub) for sub in subscriptions]
 
+def get_all_active_subscriptions_by_type(tracking_type: str) -> List[TrackingSubscription]:
+    """Get all active subscriptions of a specific type"""
+    db = get_database()
+    subscriptions = db.tracking_subscriptions.find({
+        "tracking_type": tracking_type,
+        "is_active": True
+    })
+    return [TrackingSubscription.from_dict(sub) for sub in subscriptions]
+
 def get_tracking_subscription(user_id: int, tracking_type: str, target_address: str) -> Optional[TrackingSubscription]:
     """Get a specific tracking subscription"""
     db = get_database()
@@ -294,15 +303,6 @@ def delete_tracking_subscription(user_id: int, tracking_type: str, target_addres
         "target_address": target_address.lower()
     })
 
-def get_all_active_subscriptions_by_type(tracking_type: str) -> List[TrackingSubscription]:
-    """Get all active subscriptions of a specific type"""
-    db = get_database()
-    subscriptions = db.tracking_subscriptions.find({
-        "tracking_type": tracking_type,
-        "is_active": True
-    })
-    return [TrackingSubscription.from_dict(sub) for sub in subscriptions]
-
 def update_subscription_check_time(subscription_id: str) -> None:
     """Update the last checked time for a subscription"""
     db = get_database()
@@ -337,3 +337,131 @@ def cleanup_old_data(days: int = 30) -> None:
     
     # Remove old wallet data
     db.wallet_data.delete_many({"last_updated": {"$lt": cutoff_date}})
+
+def get_all_active_tracking_subscriptions() -> List[TrackingSubscription]:
+    """Get all active tracking subscriptions across all users"""
+    db = get_database()
+    subscriptions = db.tracking_subscriptions.find({"is_active": True})
+    return [TrackingSubscription.from_dict(sub) for sub in subscriptions]
+
+def get_users_with_expiring_premium(days_left: List[int]) -> List[User]:
+    """Get users whose premium subscription is expiring in the specified number of days"""
+    db = get_database()
+    now = datetime.now()
+    
+    # Calculate date ranges for the specified days left
+    date_ranges = []
+    for days in days_left:
+        start_date = now + timedelta(days=days)
+        end_date = start_date + timedelta(days=1)
+        date_ranges.append({"premium_until": {"$gte": start_date, "$lt": end_date}})
+    
+    # Find users with premium expiring in any of the specified ranges
+    users = db.users.find({
+        "is_premium": True,
+        "$or": date_ranges
+    })
+    
+    return [User.from_dict(user) for user in users]
+
+def get_all_users() -> List[User]:
+    """Get all users in the database"""
+    db = get_database()
+    users = db.users.find()
+    return [User.from_dict(user) for user in users]
+
+def get_admin_users() -> List[User]:
+    """Get all users with admin privileges"""
+    db = get_database()
+    admin_users = db.users.find({"is_admin": True})
+    return [User.from_dict(user) for user in admin_users]
+
+def set_user_admin_status(user_id: int, is_admin: bool) -> None:
+    """Set a user's admin status"""
+    db = get_database()
+    db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"is_admin": is_admin}}
+    )
+
+def get_user_counts() -> Dict[str, int]:
+    """Get user count statistics"""
+    db = get_database()
+    now = datetime.now()
+    
+    # Calculate date thresholds
+    today_start = datetime.combine(now.date(), datetime.min.time())
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # Get counts
+    total_users = db.users.count_documents({})
+    premium_users = db.users.count_documents({"is_premium": True})
+    active_today = db.users.count_documents({"last_active": {"$gte": today_start}})
+    active_week = db.users.count_documents({"last_active": {"$gte": week_ago}})
+    active_month = db.users.count_documents({"last_active": {"$gte": month_ago}})
+    
+    return {
+        "total_users": total_users,
+        "premium_users": premium_users,
+        "active_today": active_today,
+        "active_week": active_week,
+        "active_month": active_month
+    }
+
+def update_user_referral_code(user_id: int, referral_code: str) -> None:
+    """Update a user's referral code"""
+    db = get_database()
+    db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"referral_code": referral_code}}
+    )
+
+def record_referral(referrer_id: int, referred_id: int) -> None:
+    """Record a referral relationship"""
+    db = get_database()
+    
+    # Create referral record
+    db.referrals.update_one(
+        {
+            "referrer_id": referrer_id,
+            "referred_id": referred_id
+        },
+        {
+            "$set": {
+                "referrer_id": referrer_id,
+                "referred_id": referred_id,
+                "date": datetime.now()
+            }
+        },
+        upsert=True
+    )
+    
+    # Update referrer's stats
+    db.users.update_one(
+        {"user_id": referrer_id},
+        {"$inc": {"referral_count": 1}}
+    )
+
+def record_premium_purchase(user_id: int, plan_type: str, duration_days: int) -> None:
+    """Record a premium purchase transaction"""
+    db = get_database()
+    
+    # Create transaction record
+    db.transactions.insert_one({
+        "user_id": user_id,
+        "type": "premium_purchase",
+        "plan_type": plan_type,
+        "duration_days": duration_days,
+        "amount": get_plan_price(plan_type),
+        "date": datetime.now()
+    })
+
+def get_plan_price(plan_type: str) -> float:
+    """Get the price for a premium plan"""
+    prices = {
+        "monthly": 19.99,
+        "quarterly": 49.99,
+        "annual": 149.99
+    }
+    return prices.get(plan_type, 0.0)
