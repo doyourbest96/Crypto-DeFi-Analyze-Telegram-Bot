@@ -8,12 +8,8 @@ from bot.handlers.command_handlers import (
 )
 from bot.handlers.callback_handlers import button_callback
 from bot.handlers.error_handlers import error_handler
-from data.database import init_database
 
 def create_bot():
-    # Initialize the database connection
-    init_database()
-    
     # Create the application
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     

@@ -11,13 +11,13 @@ from data.models import User, UserScan, TokenData, WalletData, TrackingSubscript
 # Global database connection
 _db: Optional[Database] = None
 
-def init_database() -> None:
+def init_database() -> bool:
     """Initialize the database connection and set up indexes"""
     global _db
     
     try:
         # Connect to MongoDB
-        client = MongoClient(MONGODB_URI)
+        client = MongoClient(MONGODB_URI) 
         _db = client[DB_NAME]
         
         # Set up indexes for collections
@@ -51,10 +51,13 @@ def init_database() -> None:
         _db.kol_wallets.create_index([("address", ASCENDING)], unique=True)
         _db.kol_wallets.create_index([("name", ASCENDING)])
         
-        logging.info("Database connection initialized successfully")
+        server_info = client.server_info()
+        logging.info(f"✅ Successfully connected to MongoDB version: {server_info.get('version')}")
+        logging.info(f"✅ Using database: {DB_NAME}")
+        return True
     except Exception as e:
-        logging.error(f"Failed to initialize database: {e}")
-        raise
+        logging.error(f"❌ Failed to initialize database: {e}")
+        return False
 
 def get_database() -> Database:
     """Get the database instance"""
