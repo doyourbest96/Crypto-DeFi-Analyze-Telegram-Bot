@@ -1,3 +1,22 @@
+# Virtual Environment
+venv/
+myenv/
+env/
+ENV/
+.env/
+.venv/
+virtualenv/
+*env/
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Logs
 logs
 *.log
