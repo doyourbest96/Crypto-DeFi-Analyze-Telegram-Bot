@@ -1,8 +1,42 @@
-python-telegram-bot==20.6
-python-dotenv==1.0.0
-web3==6.10.0
-aiohttp==3.8.5
-motor==3.3.1
-pymongo==4.5.0
-pandas==2.1.1
-matplotlib==3.8.0
+python-telegram-bot>=20.0
+web3>=6.0.0
+python-dotenv>=1.0.0
+pymongo>=4.3.3
+requests>=2.28.2
+pandas>=1.5.3
+aiohttp>=3.8.4
+
+
+defi-scope-bot/
+├── main.py                     # Entry point
+├── config.py                   # Configuration settings
+├── requirements.txt            # Dependencies
+├── .env                        # Environment variables (API keys, etc.)
+├── bot/
+│   ├── __init__.py
+│   ├── bot.py                  # Bot initialization
+│   ├── handlers/
+│   │   ├── __init__.py
+│   │   ├── command_handlers.py # Command handling logic
+│   │   ├── callback_handlers.py # Callback query handlers
+│   │   └── error_handlers.py   # Error handling
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── decorators.py       # Rate limiting, premium checks
+│   │   ├── formatters.py       # Response formatting
+│   │   └── validators.py       # Input validation
+│   └── services/
+│       ├── __init__.py
+│       ├── blockchain_service.py # Blockchain data fetching
+│       ├── token_service.py     # Token-related operations
+│       ├── wallet_service.py    # Wallet-related operations
+│       ├── user_service.py      # User management (premium status)
+│       └── tracking_service.py  # Tracking functionality
+├── data/
+│   ├── __init__.py
+│   ├── models.py               # Data models
+│   └── database.py             # Database connection and operations
+└── tests/
+    ├── __init__.py
+    └── test_*.py               # Test files
+
