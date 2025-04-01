@@ -14,31 +14,20 @@ from data.database import (
     get_all_kol_wallets, get_user_tracking_subscriptions
 )
 from data.models import User
-from services.blockchain import get_token_info, validate_address
-from services.analytics import get_profitable_wallets
-from services.notification import setup_tracking
-from services.user_management import check_premium_status, update_scan_count
+from services.blockchain import * 
+from services.analytics import *
+from services.notification import *
+from services.user_management import *
 
 # Helper functions
 async def check_user_exists(update: Update) -> User:
     """Check if user exists in database, create if not, and update activity"""
-    user_id = update.effective_user.id
-    user = get_user(user_id)
-    
-    if not user:
-        # Create new user
-        user = User(
-            user_id=user_id,
-            username=update.effective_user.username,
-            first_name=update.effective_user.first_name,
-            last_name=update.effective_user.last_name
-        )
-        save_user(user)
-    else:
-        # Update user activity
-        update_user_activity(user_id)
-    
-    return user
+    return await get_or_create_user(
+        user_id=update.effective_user.id,
+        username=update.effective_user.username,
+        first_name=update.effective_user.first_name,
+        last_name=update.effective_user.last_name
+    )
 
 async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_TYPE, feature_name: str) -> bool:
     """Check if a premium feature is being accessed by a non-premium user"""
@@ -64,16 +53,12 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
 async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
     """Check if user has exceeded their daily scan limit"""
     user = await check_user_exists(update)
+    user_id = user.user_id
     
-    # Premium users have no limits
-    if user.is_premium:
-        return False
+    # Use the service function to check rate limit
+    has_reached_limit, current_count = await check_rate_limit_service(user_id, scan_type, limit)
     
-    # Check scan count for today
-    today = datetime.now().date().isoformat()
-    scan_count = get_user_scan_count(user.user_id, scan_type, today)
-    
-    if scan_count >= limit:
+    if has_reached_limit:
         keyboard = [
             [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
         ]
@@ -81,16 +66,17 @@ async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
         
         await update.message.reply_text(
             f"⚠️ *Daily Limit Reached*\n\n"
-            f"You've reached your daily limit of {limit} {scan_type} scans.\n\n"
+            f"You've used {current_count} out of {limit} daily {scan_type} scans.\n\n"
             f"Premium users enjoy unlimited scans!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.MARKDOWN
         )
         return True
     
-    # Increment scan count
-    increment_user_scan_count(user.user_id, scan_type, today)
+    # Increment scan count using the service function
+    await increment_scan_count(user_id, scan_type)
     return False
+
 
 async def validate_address(update: Update, address: str) -> bool:
     """Validate if the provided string is a valid Ethereum address"""
@@ -104,7 +90,7 @@ async def validate_address(update: Update, address: str) -> bool:
 # Command handlers
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the /start command"""
-    user = await check_user_exists(update)
+    await check_user_exists(update)
     
     welcome_message = (
         f"👋 Welcome to DeFi-Scope Bot, {update.effective_user.first_name}!\n\n"
