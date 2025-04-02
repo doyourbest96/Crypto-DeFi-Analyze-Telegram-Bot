@@ -38,11 +38,11 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            f"⭐ *Premium Feature*\n\n"
+            f"⭐ <b>Premium Feature</b>\n\n"
             f"The {feature_name} feature is only available to premium users.\n\n"
             f"💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return True
     

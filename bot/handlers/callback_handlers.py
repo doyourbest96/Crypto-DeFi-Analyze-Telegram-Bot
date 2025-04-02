@@ -140,11 +140,11 @@ async def handle_scan_token(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            f"⚠️ *Daily Limit Reached*\n\n"
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"You've used {current_count} out of {FREE_TOKEN_SCANS_DAILY} daily token scans.\n\n"
             f"Premium users enjoy unlimited scans!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -152,7 +152,7 @@ async def handle_scan_token(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await query.edit_message_text(
         "Please send me the token contract address you want to scan.\n\n"
         "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
     
     # Set conversation state to expect token address
@@ -176,11 +176,11 @@ async def handle_scan_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            f"⚠️ *Daily Limit Reached*\n\n"
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"You've used {current_count} out of {FREE_WALLET_SCANS_DAILY} daily wallet scans.\n\n"
             f"Premium users enjoy unlimited scans!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -188,7 +188,7 @@ async def handle_scan_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.edit_message_text(
         "Please send me the wallet address you want to scan.\n\n"
         "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
     
     # Set conversation state to expect wallet address
@@ -205,18 +205,18 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         premium_until = user.premium_until.strftime("%d %B %Y") if user.premium_until else "Unknown"
         
         await query.edit_message_text(
-            f"✨ *You're Already a Premium User!*\n\n"
+            f"✨ <b>You're Already a Premium User!</b>\n\n"
             f"Thank you for supporting DeFi-Scope Bot.\n\n"
-            f"Your premium subscription is active until: *{premium_until}*\n\n"
+            f"Your premium subscription is active until: <b>{premium_until}</b>\n\n"
             f"Enjoy all the premium features!",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
     # Show premium benefits and pricing
     premium_text = (
-        "⭐ *Upgrade to DeFi-Scope Premium*\n\n"
-        "*Premium Benefits:*\n"
+        "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
+        "<b>Premium Benefits:</b>\n"
         "• Unlimited token and wallet scans\n"
         "• Access to deployer wallet analysis\n"
         "• Track tokens, wallets, and deployers\n"
@@ -225,7 +225,7 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         "• High net worth wallet monitoring\n"
         "• Priority support\n\n"
         
-        "*Pricing Plans:*\n"
+        "<b>Pricing Plans:</b>\n"
         "• Monthly: $19.99/month\n"
         "• Quarterly: $49.99 ($16.66/month)\n"
         "• Annual: $149.99 ($12.50/month)\n\n"
@@ -248,7 +248,7 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_text(
         premium_text,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_more_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
@@ -265,7 +265,7 @@ async def handle_more_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE,
         return
     
     # Format the response with more buyers
-    response = f"🔍 *First Buyers of {token_address[:6]}...{token_address[-4:]}*\n\n"
+    response = f"🔍 <b>First Buyers of {token_address[:6]}...{token_address[-4:]}</b>\n\n"
     
     for i, buyer in enumerate(first_buyers[:20], 1):  # Show more buyers
         response += (
@@ -284,7 +284,7 @@ async def handle_more_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE,
     await query.edit_message_text(
         response,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_more_kols(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -301,7 +301,7 @@ async def handle_more_kols(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     
     # Format the response with more KOLs
-    response = f"👑 *KOL Wallets Profitability Analysis*\n\n"
+    response = f"👑 <b>KOL Wallets Profitability Analysis</b>\n\n"
     
     for i, wallet in enumerate(kol_wallets, 1):  # Show all KOLs
         response += (
@@ -338,11 +338,11 @@ async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -355,10 +355,10 @@ async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         f"Most profitable wallets data for token {token_address[:6]}...{token_address[-4:]} "
         "has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -375,11 +375,11 @@ async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -392,9 +392,9 @@ async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         "Profitable token deployers data has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
@@ -411,11 +411,11 @@ async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, w
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -428,10 +428,10 @@ async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, w
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         f"Tokens deployed by wallet {wallet_address[:6]}...{wallet_address[-4:]} "
         "has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
@@ -448,11 +448,11 @@ async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, t
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -465,10 +465,10 @@ async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, t
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         f"Token holders data for {token_address[:6]}...{token_address[-4:]} "
         "has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -485,11 +485,11 @@ async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -502,9 +502,9 @@ async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         "Profitable wallets data has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -521,11 +521,11 @@ async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -538,9 +538,9 @@ async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # For now, we'll just simulate the process
     
     await query.edit_message_text(
-        "✅ *Export Complete*\n\n"
+        "✅ <b>Export Complete</b>\n\n"
         "High net worth wallets data has been exported and sent to your email address.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TYPE, deployer_address: str) -> None:
@@ -557,11 +557,11 @@ async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TY
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking deployers is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -603,11 +603,11 @@ async def handle_track_top_wallets(update: Update, context: ContextTypes.DEFAULT
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking top wallets is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -665,11 +665,11 @@ async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking high net worth wallets is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -735,7 +735,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
     
     # Show payment instructions
     payment_text = (
-        f"🛒 *{selected_plan['name']} Premium Plan*\n\n"
+        f"🛒 <b>{selected_plan['name']} Premium Plan</b>\n\n"
         f"Price: {selected_plan['price']}\n"
         f"Duration: {selected_plan['duration']}\n\n"
         f"To complete your purchase, please send the exact amount to our crypto wallet:\n\n"
@@ -753,7 +753,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(
         payment_text,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 # Message handler for expected inputs
@@ -797,7 +797,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             
             # Format the response
             response = (
-                f"📊 *Token Analysis: {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+                f"📊 <b>Token Analysis: {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
                 f"Contract: `{token_address}`\n\n"
                 f"Current Price: ${token_data.get('current_price', 'N/A')}\n"
                 f"Market Cap: ${token_data.get('current_market_cap', 'N/A')}\n"
@@ -825,7 +825,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             await processing_message.edit_text(
                 response,
                 reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.HTML
             )
         
         except Exception as e:
@@ -862,7 +862,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             
             # Format the response
             response = (
-                f"👛 *Wallet Analysis*\n\n"
+                f"👛 <b>Wallet Analysis</b>\n\n"
                 f"Address: `{wallet_address}`\n\n"
                 f"Balance: {wallet_data.get('balance', 'N/A')}\n"
                 f"First Transaction: {wallet_data.get('first_transaction', 'N/A')}\n"
@@ -887,7 +887,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             await processing_message.edit_text(
                 response,
                 reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.HTML
             )
         
         except Exception as e:
@@ -912,11 +912,11 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Top Holders Analysis is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -938,7 +938,7 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         
         # Format the response
         response = (
-            f"👥 *Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+            f"👥 <b>Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
         )
         
         for i, holder in enumerate(holders[:10], 1):
@@ -959,7 +959,7 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         await query.edit_message_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -982,11 +982,11 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Deployer Wallet Analysis is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1008,7 +1008,7 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         # Format the response
         deployer = token_data.get('deployer_wallet', {})
         response = (
-            f"🔎 *Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+            f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
             f"Deployer Wallet: `{deployer.get('address', 'Unknown')}`\n\n"
             f"Tokens Deployed: {deployer.get('tokens_deployed', 'N/A')}\n"
             f"Success Rate: {deployer.get('success_rate', 'N/A')}%\n"
@@ -1027,7 +1027,7 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         await query.edit_message_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -1050,11 +1050,11 @@ async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE,
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Token tracking is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1101,11 +1101,11 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Wallet tracking is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1162,7 +1162,7 @@ async def handle_trading_history(update: Update, context: ContextTypes.DEFAULT_T
             return
         
         # Format the response
-        response = f"📈 *Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`*\n\n"
+        response = f"📈 <b>Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
         
         for i, trade in enumerate(trading_history, 1):
             action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
@@ -1229,12 +1229,12 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         # Confirm to user
         await query.edit_message_text(
-            f"✅ *Payment Verified - Premium Activated!*\n\n"
+            f"✅ <b>Payment Verified - Premium Activated!</b>\n\n"
             f"Thank you for upgrading to DeFi-Scope Premium.\n\n"
             f"Your premium subscription is now active until: "
-            f"*{premium_until.strftime('%d %B %Y')}*\n\n"
+            f"<b>{premium_until.strftime('%d %B %Y')}</b>\n\n"
             f"Enjoy all the premium features!",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     else:
         # Payment not verified
@@ -1246,14 +1246,14 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "❌ *Payment Not Verified*\n\n"
+            "❌ <b>Payment Not Verified</b>\n\n"
             "We couldn't verify your payment at this time. This could be due to:\n\n"
             "• Payment still processing\n"
             "• Incorrect payment amount\n"
             "• Network congestion\n\n"
             "Please try again or contact support for assistance.",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
 
 async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1284,11 +1284,11 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Top Holders & Whales analysis is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1316,11 +1316,11 @@ async def handle_profitable_wallets(update: Update, context: ContextTypes.DEFAUL
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Profitable Wallets analysis is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1351,11 +1351,11 @@ async def handle_high_net_worth(update: Update, context: ContextTypes.DEFAULT_TY
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature<b>\n\n"
             "High Net Worth Wallets analysis is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
@@ -1384,7 +1384,7 @@ async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAU
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking wallet trades is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
@@ -1416,7 +1416,7 @@ async def handle_track_wallet_deployments(update: Update, context: ContextTypes.
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking wallet deployments is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
@@ -1448,7 +1448,7 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Deployer wallet scanning is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
@@ -1480,7 +1480,7 @@ async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            "⭐ *Premium Feature*\n\n"
+            "⭐ <b>Premium Feature</b>\n\n"
             "Tracking whale and dev sales is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
@@ -1503,28 +1503,28 @@ async def handle_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     query = update.callback_query
     
     help_text = (
-        "🔍 *DeFi-Scope Bot Commands*\n\n"
-        "*Token Analysis:*\n"
+        "🔍 <b>DeFi-Scope Bot Commands</b>\n\n"
+        "<b>Token Analysis:</b>\n"
         "• /fb <token_address> - First 1-50 buy wallets of a token\n"
         "• /ath <token_address> - All time high market cap of a token\n"
         "• /dw <token_address> - Scan token contract to reveal deployer wallet (Premium)\n"
         "• /th <token_address> - Scan token for top holders (Premium)\n\n"
         
-        "*Wallet Analysis:*\n"
+        "<b>Wallet Analysis:</b>\n"
         "• /mpw <token_address> - Most profitable wallets in a token\n"
         "• /wh <wallet_address> <token_address> - How long a wallet holds a token\n"
         "• /td <wallet_address> - Tokens deployed by a wallet (Premium)\n\n"
         
-        "*Tracking & Monitoring:*\n"
+        "<b>Tracking & Monitoring:</b>\n"
         "• /track <type> <address> - Track tokens, wallets or deployments (Premium)\n"
         "• /pw - Profitable wallets in any token (Premium)\n"
         "• /hnw - High net worth wallet holders (Premium)\n\n"
         
-        "*Special Lists:*\n"
+        "<b>Special Lists:</b>\n"
         "• /ptd - Most profitable token deployer wallets\n"
         "• /kol - KOL wallets profitability\n\n"
         
-        "*Other Commands:*\n"
+        "<b>Other Commands:</b>\n"
         "• /premium - Upgrade to premium\n"
         "• /help - Show this help information"
     )
@@ -1547,31 +1547,31 @@ async def handle_back(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     # Get the original welcome message
     welcome_message = (
         f"""🚀 Welcome to <b>DeFi-Scope Bot</b> {update.callback_query.from_user.first_name}! 🎉\n\n"""
-        f"🔎 **Your Ultimate DeFi Intelligence Bot!**\n"
+        f"🔎 <b>Your Ultimate DeFi Intelligence Bot!</b>\n"
         f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
-        f"✨ **What can I do for you?**\n"
-        f"🔥 **Token Analysis & Market Insights:**\n"
+        f"✨ <b>What can I do for you?</b>\n"
+        f"🔥 <b>Token Analysis & Market Insights:</b>\n"
         f"• /fb [contract] - First buyers of a token 🏆\n"
         f"• /mpw [contract] - Most profitable wallets 💸\n"
         f"• /kol [contract] - KOL wallets profitability 🎤\n"
         f"• /ath [contract] - All-time high (ATH) market cap 📈\n\n"
        
-        f"🕵️ **Wallet & Token Tracking:**\n"
+        f"🕵️ <b>Wallet & Token Tracking:</b>\n"
         f"• /dw [contract] - Deployer wallet & token history 🏗️ (Premium)\n"
         f"• /th [contract] - Top 10 holders & whale tracking 🐳 (Premium)\n"
         f"• /track [contract] - Monitor whale & dev sales 🔔 (Premium)\n"
         f"• /track wd [wallet] - Track wallet for new token deployments 🚀 (Premium)\n"
         f"• /track wbs [wallet] - Track wallet buys & sells 💼 (Premium)\n\n"
        
-        f"💰 **High Net Worth & Profitability Scans:**\n"
+        f"💰 <b>High Net Worth & Profitability Scans:/<b>\n"
         f"• /pw [trades] [buy amount] [days] [contract] - Profitable wallets 📊 (Premium)\n"
         f"• /hnw [contract] - High net worth wallet holders 💎 (Premium)\n\n"
        
-        f"🤖 **How to get started?**\n"
+        f"🤖 <b>How to get started?</b>\n"
         f"Simply type a command and let me do the magic! ✨\n"
         f"Need help? Type /help for more details. 🚀\n\n"
        
-        f"🔑 **Upgrade to Premium for unlimited scans and advanced tracking!**\n\n"
+        f"🔑 <b>Upgrade to Premium for unlimited scans and advanced tracking!</b>\n\n"
         f"Happy Trading! 🚀💰"
     )
     
@@ -1643,7 +1643,7 @@ async def handle_more_history(update: Update, context: ContextTypes.DEFAULT_TYPE
             return
         
         # Format the response
-        response = f"📈 *More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`*\n\n"
+        response = f"📈 <b>More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
         
         for i, trade in enumerate(trading_history, 8):  # Continue numbering from previous page
             action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
