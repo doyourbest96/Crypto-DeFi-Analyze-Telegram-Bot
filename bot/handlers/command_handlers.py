@@ -7,17 +7,14 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 from config import FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT
-from data.database import (
-    get_user, save_user, update_user_activity, get_user_scan_count, 
-    increment_user_scan_count, get_token_data, get_wallet_data,
-    get_profitable_wallets, get_profitable_deployers, get_kol_wallet,
-    get_all_kol_wallets, get_user_tracking_subscriptions
+from data.database import ( 
+     get_token_data, get_wallet_data, get_profitable_wallets, get_profitable_deployers, get_all_kol_wallets, get_user_tracking_subscriptions
 )
 from data.models import User
-from services.blockchain import * 
-from services.analytics import *
-from services.notification import *
-from services.user_management import *
+from bot.services.blockchain import * 
+from bot.services.analytics import *
+from bot.services.notification import *
+from bot.services.user_management import *
 
 # Helper functions
 async def check_user_exists(update: Update) -> User:

@@ -1,6 +1,6 @@
 import logging
 import sys
-# from bot.bot import create_bot
+from bot.bot import create_bot
 from data.database import init_database
 
 # Configure logging
@@ -18,8 +18,8 @@ def main():
     logging.info("🚀 Starting DeFi-Scope Telegram Bot...")
     
     # Create and start the bot
-    # app = create_bot()
-    # app.run_polling()
+    app = create_bot()
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
