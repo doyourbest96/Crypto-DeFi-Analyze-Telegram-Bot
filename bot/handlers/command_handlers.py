@@ -32,14 +32,15 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
     
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
             f"⭐ *Premium Feature*\n\n"
             f"The {feature_name} feature is only available to premium users.\n\n"
-            f"Upgrade to premium to unlock all features!",
+            f"💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.MARKDOWN
         )
@@ -57,12 +58,13 @@ async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
     
     if has_reached_limit:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            f"⚠️ *Daily Limit Reached*\n\n"
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"You've used {current_count} out of {limit} daily {scan_type} scans.\n\n"
             f"Premium users enjoy unlimited scans!",
             reply_markup=reply_markup,
@@ -90,29 +92,70 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await check_user_exists(update)
     
     welcome_message = (
-        f"👋 Welcome to DeFi-Scope Bot, {update.effective_user.first_name}!\n\n"
-        f"I can help you analyze tokens, track wallets, and discover profitable opportunities in DeFi.\n\n"
-        f"🔍 Here are some commands to get started:\n"
-        f"• /fb - First buyers of a token\n"
-        f"• /mpw - Most profitable wallets\n"
-        f"• /kol - KOL wallets profitability\n\n"
-        f"Type /help to see all available commands."
-    )
+        f"""🚀 Welcome to <b>DeFi-Scope Bot</b>, {update.effective_user.first_name}! 🎉\n\n"""
+        f"🔎 <b>Your Ultimate DeFi Intelligence Bot!</b>\n"
+        f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
+        f"✨ <b>What can I do for you?</b>\n\n"
+        f"🔥 <b>Token Analysis & Market Insights:</b>\n"
+        f"• /fb [contract] - First buyers of a token 🏆\n"
+        f"• /mpw [contract] - Most profitable wallets 💸\n"
+        f"• /kol [contract] - KOL wallets profitability 🎤\n"
+        f"• /ath [contract] - All-time high (ATH) market cap 📈\n\n"
+        
+        f"🕵️ <b>Wallet & Token Tracking:</b>\n"
+        f"• /dw [contract] - Deployer wallet & token history 🏗️ (Premium)\n"
+        f"• /th [contract] - Top 10 holders & whale tracking 🐳 (Premium)\n"
+        f"• /track [contract] - Monitor whale & dev sales 🔔 (Premium)\n"
+        f"• /track wd [wallet] - Track wallet for new token deployments 🚀 (Premium)\n"
+        f"• /track wbs [wallet] - Track wallet buys & sells 💼 (Premium)\n\n"
+        
+        f"💰 <b>High Net Worth & Profitability Scans:</b>\n"
+        f"• /pw [trades] [buy amount] [days] [contract] - Profitable wallets 📊 (Premium)\n"
+        f"• /hnw [contract] - High net worth wallet holders 💎 (Premium)\n\n"
+        
+        f"🤖 <b>How to get started?</b>\n"
+        f"Simply type a command and let me do the magic! ✨\n"
+        f"Need help? Type /help for more details. 🚀\n\n"
+        
+        f"🔑 <b>Upgrade to Premium for unlimited scans and advanced tracking!</b>\n\n"
+        f"Happy Trading! 🚀💰"
+    ) 
     
     keyboard = [
         [
-            InlineKeyboardButton("Scan Token", callback_data="scan_token"),
-            InlineKeyboardButton("Scan Wallet", callback_data="scan_wallet")
+            InlineKeyboardButton("🔍 Scan Token", callback_data="scan_token"),
+            InlineKeyboardButton("👛 Scan Wallet", callback_data="scan_wallet")
         ],
         [
-            InlineKeyboardButton("Premium Features", callback_data="premium_info")
+            InlineKeyboardButton("📈 All-Time High (ATH)", callback_data="ath"),
+            InlineKeyboardButton("🐳 Top Holders & Whales", callback_data="top_holders")
+        ],
+        [
+            InlineKeyboardButton("💰 Profitable Wallets", callback_data="profitable_wallets"),
+            InlineKeyboardButton("💎 High Net Worth Wallets", callback_data="high_net_worth")
+        ],
+        [
+            InlineKeyboardButton("📊 Track Wallet Buys/Sells", callback_data="track_wallet_trades"),
+            InlineKeyboardButton("🚀 Track New Token Deployments", callback_data="track_wallet_deployments")
+        ],
+        [
+            InlineKeyboardButton("🏗️ Deployer Wallet Scan", callback_data="deployer_wallet_scan"),
+            InlineKeyboardButton("🔔 Track Whale & Dev Sales", callback_data="track_whale_sales")
+        ],
+        [
+            InlineKeyboardButton("💎 Premium Features", callback_data="premium_info")
+        ],
+        [
+            InlineKeyboardButton("📝 Help", callback_data="help"),
+            InlineKeyboardButton("🔙 Back to Menu", callback_data="back")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
         welcome_message,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -120,35 +163,35 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await check_user_exists(update)
     
     help_text = (
-        "🔍 *DeFi-Scope Bot Commands*\n\n"
-        "*Token Analysis:*\n"
+        "🔍 <b>DeFi-Scope Bot Commands</b>\n\n"
+        "<b>Token Analysis:</b>\n"
         "• /fb <token_address> - First 1-50 buy wallets of a token\n"
         "• /ath <token_address> - All time high market cap of a token\n"
         "• /dw <token_address> - Scan token contract to reveal deployer wallet (Premium)\n"
         "• /th <token_address> - Scan token for top holders (Premium)\n\n"
         
-        "*Wallet Analysis:*\n"
+        "<b>Wallet Analysis:</b>\n"
         "• /mpw <token_address> - Most profitable wallets in a token\n"
         "• /wh <wallet_address> <token_address> - How long a wallet holds a token\n"
         "• /td <wallet_address> - Tokens deployed by a wallet (Premium)\n\n"
         
-        "*Tracking & Monitoring:*\n"
+        "<b>Tracking & Monitoring:</b>\n"
         "• /track <type> <address> - Track tokens, wallets or deployments (Premium)\n"
         "• /pw - Profitable wallets in any token (Premium)\n"
         "• /hnw - High net worth wallet holders (Premium)\n\n"
         
-        "*Special Lists:*\n"
+        "<b>Special Lists:</b>\n"
         "• /ptd - Most profitable token deployer wallets\n"
         "• /kol - KOL wallets profitability\n\n"
         
-        "*Other Commands:*\n"
+        "<b>Other Commands:</b>\n"
         "• /premium - Upgrade to premium\n"
         "• /help - Show this help information"
     )
     
     await update.message.reply_text(
         help_text,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 async def fb_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -187,7 +230,7 @@ async def fb_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
         
         # Format the response
-        response = f"🔍 *First Buyers of {token_address[:6]}...{token_address[-4:]}*\n\n"
+        response = f"🔍 <b>First Buyers of {token_address[:6]}...{token_address[-4:]}</b>\n\n"
         
         for i, buyer in enumerate(first_buyers[:10], 1):
             response += (
@@ -198,14 +241,15 @@ async def fb_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Add button to view more
         keyboard = [
-            [InlineKeyboardButton("View More Buyers", callback_data=f"more_buyers_{token_address}")]
+            [InlineKeyboardButton("View More Buyers", callback_data=f"more_buyers_{token_address}")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -254,7 +298,7 @@ async def mpw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         
         # Format the response
-        response = f"💰 *Most Profitable Wallets for {token_address[:6]}...{token_address[-4:]}*\n\n"
+        response = f"💰 <b>Most Profitable Wallets for {token_address[:6]}...{token_address[-4:]}</b>\n\n"
         
         for i, wallet in enumerate(profitable_wallets, 1):
             response += (
@@ -267,19 +311,21 @@ async def mpw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if not user.is_premium:
             response += "\n_Upgrade to premium to see more profitable wallets!_"
             keyboard = [
-                [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+                [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+                [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
         else:
             keyboard = [
-                [InlineKeyboardButton("Export Data", callback_data=f"export_mpw_{token_address}")]
+                [InlineKeyboardButton("Export Data", callback_data=f"export_mpw_{token_address}")],
+                [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -326,7 +372,7 @@ async def wh_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Format the response
         response = (
-            f"⏱️ *Wallet Holding Analysis*\n\n"
+            f"⏱️ <b>Wallet Holding Analysis</b>\n\n"
             f"Wallet: `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
             f"Token: `{token_address[:6]}...{token_address[-4:]}`\n\n"
             f"Average Holding Time: {holding_data.get('avg_holding_time', 'N/A')}\n"
@@ -338,7 +384,7 @@ async def wh_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         await processing_message.edit_text(
             response,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -372,7 +418,7 @@ async def ptd_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         
         # Format the response
-        response = f"🚀 *Most Profitable Token Deployers (Last 30 Days)*\n\n"
+        response = f"🚀 <b>Most Profitable Token Deployers (Last 30 Days)</b>\n\n"
         
         for i, deployer in enumerate(profitable_deployers, 1):
             response += (
@@ -385,19 +431,21 @@ async def ptd_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if not user.is_premium:
             response += "\n_Upgrade to premium to see more profitable deployers!_"
             keyboard = [
-                [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+                [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+                [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
         else:
             keyboard = [
-                [InlineKeyboardButton("Export Data", callback_data="export_ptd")]
+                [InlineKeyboardButton("Export Data", callback_data="export_ptd")],
+                [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -427,7 +475,7 @@ async def kol_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         
         # Format the response
-        response = f"👑 *KOL Wallets Profitability Analysis*\n\n"
+        response = f"👑 <b>KOL Wallets Profitability Analysis</b>\n\n"
         
         for i, wallet in enumerate(kol_wallets[:10], 1):
             response += (
@@ -439,14 +487,15 @@ async def kol_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         
         # Add button to view more
         keyboard = [
-            [InlineKeyboardButton("View More KOLs", callback_data="more_kols")]
+            [InlineKeyboardButton("View More KOLs", callback_data="more_kols")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -493,7 +542,7 @@ async def td_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Format the response
         deployed_tokens = wallet_data.get('deployed_tokens', [])
-        response = f"🚀 *Tokens Deployed by `{wallet_address[:6]}...{wallet_address[-4:]}`*\n\n"
+        response = f"🚀 </b>Tokens Deployed by `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
         
         for i, token in enumerate(deployed_tokens[:10], 1):
             response += (
@@ -505,14 +554,15 @@ async def td_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Add button to export data
         keyboard = [
-            [InlineKeyboardButton("Export Full Data", callback_data=f"export_td_{wallet_address}")]
+            [InlineKeyboardButton("Export Full Data", callback_data=f"export_td_{wallet_address}")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -558,7 +608,7 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         
         # Format the response
         response = (
-            f"📈 *All-Time High Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+            f"📈 <b>All-Time High Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
             f"Contract: `{token_address}`\n\n"
             f"ATH Market Cap: ${token_data.get('ath_market_cap', 'N/A')}\n"
             f"ATH Price: ${token_data.get('ath_price', 'N/A')}\n"
@@ -617,7 +667,7 @@ async def dw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         # Format the response
         deployer = token_data.get('deployer_wallet', {})
         response = (
-            f"🔎 *Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+            f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
             f"Deployer Wallet: `{deployer.get('address', 'Unknown')}`\n\n"
             f"Tokens Deployed: {deployer.get('tokens_deployed', 'N/A')}\n"
             f"Success Rate: {deployer.get('success_rate', 'N/A')}%\n"
@@ -628,14 +678,15 @@ async def dw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Add button to track this deployer
         keyboard = [
-            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")]
+            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -682,7 +733,7 @@ async def th_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Format the response
         response = (
-            f"👥 *Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})*\n\n"
+            f"👥 <b>Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
         )
         
         for i, holder in enumerate(holders[:10], 1):
@@ -695,14 +746,15 @@ async def th_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         # Add button to export data
         keyboard = [
-            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")]
+            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -799,7 +851,7 @@ async def pw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
         
         # Format the response
-        response = f"💰 *Most Profitable Wallets (Last 30 Days)*\n\n"
+        response = f"💰 <b>Most Profitable Wallets (Last 30 Days)</b>\n\n"
         
         for i, wallet in enumerate(profitable_wallets[:15], 1):
             response += (
@@ -812,14 +864,15 @@ async def pw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         # Add button to export data
         keyboard = [
             [InlineKeyboardButton("Export Full Data", callback_data="export_pw")],
-            [InlineKeyboardButton("Track Top Wallets", callback_data="track_top_wallets")]
+            [InlineKeyboardButton("Track Top Wallets", callback_data="track_top_wallets")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -854,7 +907,7 @@ async def hnw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         
         # Format the response
-        response = f"💎 *High Net Worth Wallets*\n\n"
+        response = f"💎 <b>High Net Worth Wallets</b>\n\n"
         
         for i, wallet in enumerate(hnw_wallets[:10], 1):
             response += (
@@ -867,14 +920,15 @@ async def hnw_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         # Add button to export data
         keyboard = [
             [InlineKeyboardButton("Export Full Data", callback_data="export_hnw")],
-            [InlineKeyboardButton("Track HNW Wallets", callback_data="track_hnw_wallets")]
+            [InlineKeyboardButton("Track HNW Wallets", callback_data="track_hnw_wallets")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
             response,
             reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     
     except Exception as e:
@@ -893,18 +947,18 @@ async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         premium_until = user.premium_until.strftime("%d %B %Y") if user.premium_until else "Unknown"
         
         await update.message.reply_text(
-            f"✨ *You're Already a Premium User!*\n\n"
+            f"✨ <b>You're Already a Premium User!</b>\n\n"
             f"Thank you for supporting DeFi-Scope Bot.\n\n"
-            f"Your premium subscription is active until: *{premium_until}*\n\n"
+            f"Your premium subscription is active until: <b>{premium_until}</b>\n\n"
             f"Enjoy all the premium features!",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         return
     
     # Show premium benefits and pricing
     premium_text = (
-        "⭐ *Upgrade to DeFi-Scope Premium*\n\n"
-        "*Premium Benefits:*\n"
+        "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
+        "<b>Premium Benefits:</b>\n"
         "• Unlimited token and wallet scans\n"
         "• Access to deployer wallet analysis\n"
         "• Track tokens, wallets, and deployers\n"
@@ -913,7 +967,7 @@ async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "• High net worth wallet monitoring\n"
         "• Priority support\n\n"
         
-        "*Pricing Plans:*\n"
+        "<b>Pricing Plans:</b>\n"
         "• Monthly: $19.99/month\n"
         "• Quarterly: $49.99 ($16.66/month)\n"
         "• Annual: $149.99 ($12.50/month)\n\n"
@@ -928,12 +982,13 @@ async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ],
         [
             InlineKeyboardButton("Annual Plan (Best Value)", callback_data="premium_annual")
-        ]
+        ],
+        [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
         premium_text,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
