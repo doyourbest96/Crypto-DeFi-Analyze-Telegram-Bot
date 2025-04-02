@@ -11,10 +11,20 @@ from data.database import (
     get_all_kol_wallets, get_user_tracking_subscriptions
 )
 from data.models import User
-from services.blockchain import *
-from services.analytics import *
-from services.notification import *
-from services.user_management import *
+from bot.services.blockchain import *
+from bot.services.analytics import *
+from bot.services.notification import *
+from bot.services.user_management import *
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle all callback queries from inline keyboards"""
+    query = update.callback_query
+    await query.answer()  # Answer the callback query to stop the loading animation
+    
+    callback_data = query.data
+    
+    # Log the callback data for debugging
+    logging.info(f"Callback query received: {callback_data}")
 
 # Helper function to check user exists
 async def check_callback_user(update: Update) -> User:
