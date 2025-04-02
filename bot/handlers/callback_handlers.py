@@ -16,16 +16,6 @@ from bot.services.analytics import *
 from bot.services.notification import *
 from bot.services.user_management import *
 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle all callback queries from inline keyboards"""
-    query = update.callback_query
-    await query.answer()  # Answer the callback query to stop the loading animation
-    
-    callback_data = query.data
-    
-    # Log the callback data for debugging
-    logging.info(f"Callback query received: {callback_data}")
-
 # Helper function to check user exists
 async def check_callback_user(update: Update) -> User:
     """Check if user exists in database, create if not, and update activity"""
@@ -52,18 +42,33 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_scan_token(update, context)
     elif callback_data == "scan_wallet":
         await handle_scan_wallet(update, context)
+    elif callback_data == "ath":
+        await handle_ath(update, context)
+    elif callback_data == "top_holders":
+        await handle_top_holders(update, context)
+    elif callback_data == "profitable_wallets":
+        await handle_profitable_wallets(update, context)
+    elif callback_data == "high_net_worth":
+        await handle_high_net_worth(update, context)
+    elif callback_data == "track_wallet_trades":
+        await handle_track_wallet_trades(update, context)
+    elif callback_data == "track_wallet_deployments":
+        await handle_track_wallet_deployments(update, context)
+    elif callback_data == "deployer_wallet_scan":
+        await handle_deployer_wallet_scan(update, context)
+    elif callback_data == "track_whale_sales":
+        await handle_track_whale_sales(update, context)
     elif callback_data == "premium_info":
         await handle_premium_info(update, context)
+    elif callback_data == "help":
+        await handle_help(update, context)
+    elif callback_data == "back":
+        await handle_back(update, context)
     elif callback_data.startswith("more_buyers_"):
         token_address = callback_data.replace("more_buyers_", "")
         await handle_more_buyers(update, context, token_address)
     elif callback_data == "more_kols":
         await handle_more_kols(update, context)
-    elif callback_data.startswith("export_mpw_"):
-        token_address = callback_data.replace("export_mpw_", "")
-        await handle_export_mpw(update, context, token_address)
-    elif callback_data == "export_ptd":
-        await handle_export_ptd(update, context)
     elif callback_data.startswith("export_td_"):
         wallet_address = callback_data.replace("export_td_", "")
         await handle_export_td(update, context, wallet_address)
@@ -84,6 +89,32 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     elif callback_data.startswith("premium_"):
         plan = callback_data.replace("premium_", "")
         await handle_premium_purchase(update, context, plan)
+    elif callback_data.startswith("payment_made_"):
+        plan = callback_data.replace("payment_made_", "")
+        await handle_payment_made(update, context, plan)
+    elif callback_data.startswith("th_"):
+        token_address = callback_data.replace("th_", "")
+        await handle_th(update, context, token_address)
+    elif callback_data.startswith("dw_"):
+        token_address = callback_data.replace("dw_", "")
+        await handle_dw(update, context, token_address)
+    elif callback_data.startswith("track_token_"):
+        token_address = callback_data.replace("track_token_", "")
+        await handle_track_token(update, context, token_address)
+    elif callback_data.startswith("track_wallet_"):
+        wallet_address = callback_data.replace("track_wallet_", "")
+        await handle_track_wallet(update, context, wallet_address)
+    elif callback_data.startswith("trading_history_"):
+        wallet_address = callback_data.replace("trading_history_", "")
+        await handle_trading_history(update, context, wallet_address)
+    elif callback_data.startswith("more_history_"):
+        wallet_address = callback_data.replace("more_history_", "")
+        await handle_more_history(update, context, wallet_address)
+    elif callback_data.startswith("export_ptd"):
+        await handle_export_ptd(update, context)
+    elif callback_data.startswith("export_mpw_"):
+        token_address = callback_data.replace("export_mpw_", "")
+        await handle_export_mpw(update, context, token_address)
     else:
         # Unknown callback data
         await query.edit_message_text(
@@ -103,7 +134,8 @@ async def handle_scan_token(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -138,7 +170,8 @@ async def handle_scan_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -206,8 +239,9 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
             InlineKeyboardButton("Quarterly Plan", callback_data="premium_quarterly")
         ],
         [
-            InlineKeyboardButton("Annual Plan (Best Value)", callback_data="premium_annual")
-        ]
+            InlineKeyboardButton("Annual Plan (Best Value)", callback_data="premium_annual"),
+            InlineKeyboardButton("🔙 Back", callback_data="back")
+        ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -242,7 +276,8 @@ async def handle_more_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE,
     
     # Add button to export data
     keyboard = [
-        [InlineKeyboardButton("Export Full Data", callback_data=f"export_buyers_{token_address}")]
+        [InlineKeyboardButton("Export Full Data", callback_data=f"export_buyers_{token_address}")],
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -278,7 +313,8 @@ async def handle_more_kols(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     # Add button to export data
     keyboard = [
-        [InlineKeyboardButton("Export Full Data", callback_data="export_kols")]
+        [InlineKeyboardButton("Export Full Data", callback_data="export_kols")],
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -296,7 +332,8 @@ async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -332,7 +369,8 @@ async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -367,7 +405,8 @@ async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, w
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -403,7 +442,8 @@ async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, t
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -439,7 +479,8 @@ async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -474,7 +515,8 @@ async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -509,7 +551,8 @@ async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TY
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -554,7 +597,8 @@ async def handle_track_top_wallets(update: Update, context: ContextTypes.DEFAULT
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -615,7 +659,8 @@ async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -700,7 +745,8 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
     )
     
     keyboard = [
-        [InlineKeyboardButton("I've Made Payment", callback_data=f"payment_made_{plan}")]
+        [InlineKeyboardButton("I've Made Payment", callback_data=f"payment_made_{plan}")],
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -771,7 +817,8 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
                 [
                     InlineKeyboardButton("Deployer Analysis", callback_data=f"dw_{token_address}"),
                     InlineKeyboardButton("Track Token", callback_data=f"track_token_{token_address}")
-                ]
+                ],
+                [InlineKeyboardButton("🔙 Back", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -832,7 +879,8 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
                 ],
                 [
                     InlineKeyboardButton("Track Wallet", callback_data=f"track_wallet_{wallet_address}")
-                ]
+                ],
+                [InlineKeyboardButton("🔙 Back", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -858,7 +906,8 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -902,7 +951,8 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         
         # Add button to export data
         keyboard = [
-            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")]
+            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -926,7 +976,8 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -968,7 +1019,8 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         
         # Add button to track this deployer
         keyboard = [
-            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")]
+            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -992,7 +1044,8 @@ async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE,
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1042,7 +1095,8 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")]
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1121,7 +1175,8 @@ async def handle_trading_history(update: Update, context: ContextTypes.DEFAULT_T
         
         # Add button to view more
         keyboard = [
-            [InlineKeyboardButton("View More History", callback_data=f"more_history_{wallet_address}")]
+            [InlineKeyboardButton("View More History", callback_data=f"more_history_{wallet_address}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1185,7 +1240,8 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Payment not verified
         keyboard = [
             [InlineKeyboardButton("Try Again", callback_data=f"premium_{plan}")],
-            [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")]
+            [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1200,4 +1256,425 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             parse_mode=ParseMode.MARKDOWN
         )
 
+async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle ATH button callback"""
+    query = update.callback_query
+    
+    # Prompt user to enter token address
+    await query.edit_message_text(
+        "Please send me the token contract address to check its All-Time High (ATH).\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect token address for ATH
+    context.user_data["expecting"] = "ath_token_address"
 
+async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle top holders button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Top Holders & Whales analysis is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter token address
+    await query.edit_message_text(
+        "Please send me the token contract address to analyze its top holders.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect token address for top holders
+    context.user_data["expecting"] = "top_holders_token_address"
+
+async def handle_profitable_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle profitable wallets button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Profitable Wallets analysis is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter parameters
+    await query.edit_message_text(
+        "Please provide parameters for profitable wallets search in this format:\n\n"
+        "`<min_trades> <min_buy_amount> <days_back> <token_address (optional)>`\n\n"
+        "Example: `10 0.5 30 0x1234...abcd`\n\n"
+        "This will find wallets with at least 10 trades, minimum buy of 0.5 ETH, "
+        "active in the last 30 days, for the specified token (optional).",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect parameters for profitable wallets
+    context.user_data["expecting"] = "profitable_wallets_params"
+
+async def handle_high_net_worth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle high net worth wallets button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "High Net Worth Wallets analysis is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter token address (optional)
+    await query.edit_message_text(
+        "Please send me a token contract address to find high net worth wallets holding this token.\n\n"
+        "Or send 'all' to find high net worth wallets across all tokens.\n\n"
+        "Example: `0x1234...abcd` or `all`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect input for high net worth wallets
+    context.user_data["expecting"] = "high_net_worth_input"
+
+async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track wallet trades button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Tracking wallet trades is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter wallet address
+    await query.edit_message_text(
+        "Please send me the wallet address you want to track for buys and sells.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect wallet address for tracking trades
+    context.user_data["expecting"] = "track_wallet_trades_address"
+
+async def handle_track_wallet_deployments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track wallet deployments button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Tracking wallet deployments is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter wallet address
+    await query.edit_message_text(
+        "Please send me the wallet address you want to track for new token deployments.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect wallet address for tracking deployments
+    context.user_data["expecting"] = "track_wallet_deployments_address"
+
+async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle deployer wallet scan button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Deployer wallet scanning is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter token address
+    await query.edit_message_text(
+        "Please send me the token contract address to analyze its deployer wallet.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect token address for deployer wallet scan
+    context.user_data["expecting"] = "deployer_wallet_scan_token"
+
+async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track whale sales button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ *Premium Feature*\n\n"
+            "Tracking whale and dev sales is only available to premium users.\n\n"
+            "Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Prompt user to enter token address
+    await query.edit_message_text(
+        "Please send me the token contract address to track whale and dev sales.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect token address for tracking whale sales
+    context.user_data["expecting"] = "track_whale_sales_token"
+
+async def handle_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle help button callback"""
+    query = update.callback_query
+    
+    help_text = (
+        "🔍 *DeFi-Scope Bot Commands*\n\n"
+        "*Token Analysis:*\n"
+        "• /fb <token_address> - First 1-50 buy wallets of a token\n"
+        "• /ath <token_address> - All time high market cap of a token\n"
+        "• /dw <token_address> - Scan token contract to reveal deployer wallet (Premium)\n"
+        "• /th <token_address> - Scan token for top holders (Premium)\n\n"
+        
+        "*Wallet Analysis:*\n"
+        "• /mpw <token_address> - Most profitable wallets in a token\n"
+        "• /wh <wallet_address> <token_address> - How long a wallet holds a token\n"
+        "• /td <wallet_address> - Tokens deployed by a wallet (Premium)\n\n"
+        
+        "*Tracking & Monitoring:*\n"
+        "• /track <type> <address> - Track tokens, wallets or deployments (Premium)\n"
+        "• /pw - Profitable wallets in any token (Premium)\n"
+        "• /hnw - High net worth wallet holders (Premium)\n\n"
+        
+        "*Special Lists:*\n"
+        "• /ptd - Most profitable token deployer wallets\n"
+        "• /kol - KOL wallets profitability\n\n"
+        
+        "*Other Commands:*\n"
+        "• /premium - Upgrade to premium\n"
+        "• /help - Show this help information"
+    )
+    
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back to Main Menu", callback_data="back")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        help_text,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+async def handle_back(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle back button callback"""
+    query = update.callback_query
+    
+    # Get the original welcome message
+    welcome_message = (
+        f"""🚀 Welcome to <b>DeFi-Scope Bot</b> {update.callback_query.from_user.first_name}! 🎉\n\n"""
+        f"🔎 **Your Ultimate DeFi Intelligence Bot!**\n"
+        f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
+        f"✨ **What can I do for you?**\n"
+        f"🔥 **Token Analysis & Market Insights:**\n"
+        f"• /fb [contract] - First buyers of a token 🏆\n"
+        f"• /mpw [contract] - Most profitable wallets 💸\n"
+        f"• /kol [contract] - KOL wallets profitability 🎤\n"
+        f"• /ath [contract] - All-time high (ATH) market cap 📈\n\n"
+       
+        f"🕵️ **Wallet & Token Tracking:**\n"
+        f"• /dw [contract] - Deployer wallet & token history 🏗️ (Premium)\n"
+        f"• /th [contract] - Top 10 holders & whale tracking 🐳 (Premium)\n"
+        f"• /track [contract] - Monitor whale & dev sales 🔔 (Premium)\n"
+        f"• /track wd [wallet] - Track wallet for new token deployments 🚀 (Premium)\n"
+        f"• /track wbs [wallet] - Track wallet buys & sells 💼 (Premium)\n\n"
+       
+        f"💰 **High Net Worth & Profitability Scans:**\n"
+        f"• /pw [trades] [buy amount] [days] [contract] - Profitable wallets 📊 (Premium)\n"
+        f"• /hnw [contract] - High net worth wallet holders 💎 (Premium)\n\n"
+       
+        f"🤖 **How to get started?**\n"
+        f"Simply type a command and let me do the magic! ✨\n"
+        f"Need help? Type /help for more details. 🚀\n\n"
+       
+        f"🔑 **Upgrade to Premium for unlimited scans and advanced tracking!**\n\n"
+        f"Happy Trading! 🚀💰"
+    )
+    
+    # Recreate the original keyboard
+    keyboard = [
+        [
+            InlineKeyboardButton("🔍 Scan Token", callback_data="scan_token"),
+            InlineKeyboardButton("👛 Scan Wallet", callback_data="scan_wallet")
+        ],
+        [
+            InlineKeyboardButton("📈 All-Time High (ATH)", callback_data="ath"),
+            InlineKeyboardButton("🐳 Top Holders & Whales", callback_data="top_holders")
+        ],
+        [
+            InlineKeyboardButton("💰 Profitable Wallets", callback_data="profitable_wallets"),
+            InlineKeyboardButton("💎 High Net Worth Wallets", callback_data="high_net_worth")
+        ],
+        [
+            InlineKeyboardButton("📊 Track Wallet Buys/Sells", callback_data="track_wallet_trades"),
+            InlineKeyboardButton("🚀 Track New Token Deployments", callback_data="track_wallet_deployments")
+        ],
+        [
+            InlineKeyboardButton("🏗️ Deployer Wallet Scan", callback_data="deployer_wallet_scan"),
+            InlineKeyboardButton("🔔 Track Whale & Dev Sales", callback_data="track_whale_sales")
+        ],
+        [
+            InlineKeyboardButton("💎 Premium Features", callback_data="premium_info")
+        ],
+        [
+            InlineKeyboardButton("📝 Help", callback_data="help"),
+            InlineKeyboardButton("🔙 Back", callback_data="back")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Return to the main menu
+    await query.edit_message_text(
+        welcome_message,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_more_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
+    """Handle more trading history callback"""
+    query = update.callback_query
+    
+    # Send processing message
+    await query.edit_message_text(
+        "🔍 Retrieving more trading history... This may take a moment."
+    )
+    
+    try:
+        # Simulate getting more trading history
+        # In a real implementation, you would query blockchain data with pagination
+        trading_history = [
+            {
+                "token": f"Token {i}",
+                "action": "Buy" if i % 3 != 0 else "Sell",
+                "amount": f"{i * 1000}",
+                "value": f"${i * 100}",
+                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
+            } for i in range(8, 20)  # Get next page of results
+        ]
+        
+        if not trading_history:
+            await query.edit_message_text(
+                "❌ No additional trading history found for this wallet."
+            )
+            return
+        
+        # Format the response
+        response = f"📈 *More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`*\n\n"
+        
+        for i, trade in enumerate(trading_history, 8):  # Continue numbering from previous page
+            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
+            response += (
+                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
+                f"   Amount: {trade['amount']} tokens\n"
+                f"   Value: {trade['value']}\n"
+                f"   Date: {trade['date']}\n\n"
+            )
+        
+        # Add buttons for navigation
+        keyboard = [
+            [
+                InlineKeyboardButton("⬅️ Previous Page", callback_data=f"trading_history_{wallet_address}"),
+                InlineKeyboardButton("Next Page ➡️", callback_data=f"more_history_page2_{wallet_address}")
+            ],
+            [
+                InlineKeyboardButton("Export Full History", callback_data=f"export_history_{wallet_address}")
+            ],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in handle_more_history: {e}")
+        await query.edit_message_text(
+            "❌ An error occurred while retrieving more trading history. Please try again later."
+        )
