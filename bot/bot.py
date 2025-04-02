@@ -6,7 +6,7 @@ from bot.handlers.command_handlers import (
     ath_command, dw_command, th_command, track_command,
     pw_command, hnw_command, premium_command
 )
-from bot.handlers.callback_handlers import button_callback
+from bot.handlers.callback_handlers import handle_callback_query as button_callback 
 from bot.handlers.error_handlers import error_handler
 
 def create_bot():
