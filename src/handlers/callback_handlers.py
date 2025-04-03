@@ -5,13 +5,13 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from config import FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT
+from config import FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT, SUBSCRIPTION_WALLET_ADDRESS
 from data.database import (
     get_token_data, get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions
 )
 from data.models import User
-from data.database import get_plan_price
+from data.database import get_plan_details, get_plan_payment_details
 
 from services.blockchain import *
 from services.analytics import *
@@ -54,14 +54,19 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     elif callback_data == "premium_info":
         await handle_premium_info(update, context)
     elif callback_data.startswith("premium_plan_"):
-        plan = callback_data.replace("premium_plan_", "")
-        await handle_premium_purchase(update, context, plan)
+        parts = callback_data.replace("premium_plan_", "").split("_")
+        if len(parts) == 2:
+            plan, currency = parts
+            await handle_premium_purchase(update, context, plan, currency)
+        else:
+            await query.answer("Invalid plan selection", show_alert=True)
     elif callback_data.startswith("payment_made_"):
-        plan = callback_data.replace("payment_made_", "")
-        await handle_payment_made(update, context, plan)
-    elif callback_data.startswith("payment_retry_"):
-        plan = callback_data.replace("payment_retry_", "")
-        await handle_payment_retry(update, context, plan)
+        parts = callback_data.replace("payment_made_", "").split("_")
+        if len(parts) == 2:
+            plan, currency = parts
+            await handle_payment_made(update, context, plan, currency)
+        else:
+            await query.answer("Invalid payment confirmation", show_alert=True)
     elif callback_data == "scan_token":
         await handle_scan_token(update, context)
     elif callback_data == "scan_wallet":
@@ -1814,14 +1819,18 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     keyboard = [
         [
-            InlineKeyboardButton("📅  Monthly Plan      $19.99/month", callback_data="premium_plan_monthly"),
-            InlineKeyboardButton("📅  Quarterly Plan    $49.99/quarter", callback_data="premium_plan_quarterly"),
-            InlineKeyboardButton("📅  Annual Plan       $149.99/year", callback_data="premium_plan_annual")
+            InlineKeyboardButton("Weekly - Pay with ETH", callback_data="premium_plan_weekly_eth"),
+            InlineKeyboardButton("Weekly - Pay with BNB", callback_data="premium_plan_weekly_bnb")
+        ],
+        [
+            InlineKeyboardButton("Monthly - Pay with ETH", callback_data="premium_plan_monthly_eth"),
+            InlineKeyboardButton("Monthly - Pay with BNB", callback_data="premium_plan_monthly_bnb")
         ],
         [
             InlineKeyboardButton("🔙 Back", callback_data="back")
         ],
     ]
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
@@ -1845,44 +1854,134 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         except:
             pass
 
-async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str) -> None:
+async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle premium info callback"""
+    query = update.callback_query
+    
+    # Check if user is already premium
+    user = await check_callback_user(update)
+    
+    if user.is_premium:
+        premium_until = user.premium_until.strftime("%d %B %Y") if user.premium_until else "Unknown"
+        
+        await query.edit_message_text(
+            f"✨ <b>You're Already a Premium User!</b>\n\n"
+            f"Thank you for supporting DeFi-Scope Bot.\n\n"
+            f"Your premium subscription is active until: <b>{premium_until}</b>\n\n"
+            f"Enjoy all the premium features!",
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Show premium benefits and pricing
+    premium_text = (
+        "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
+
+        "<b>🚀 Why Go Premium?</b>\n"
+        "Gain unlimited access to powerful tools that help you track tokens, analyze wallets, "
+        "and monitor whales like a pro. With DeFi-Scope Premium, you'll stay ahead of the market and "
+        "make smarter investment decisions.\n\n"
+
+        "<b>🔥 Premium Benefits:</b>\n"
+        "✅ <b>Unlimited Token & Wallet Scans:</b> Analyze as many tokens and wallets as you want, with no daily limits.\n"
+        "✅ <b>Deployer Wallet Analysis:</b> Find the deployer of any token, check their past projects, "
+        "and spot potential scams before investing.\n"
+        "✅ <b>Track Token, Wallet & Deployer Movements:</b> Get real-time alerts when a wallet buys, sells, "
+        "or deploys a new token.\n"
+        "✅ <b>View Top Holders of Any Token:</b> Discover which whales and big investors are holding a token, "
+        "and track their transactions.\n"
+        "✅ <b>Profitable Wallets Database:</b> Get exclusive access to a database of wallets that consistently "
+        "make profits in the DeFi market.\n"
+        "✅ <b>High Net Worth Wallet Monitoring:</b> Find wallets with high-value holdings and see how they invest.\n"
+        "✅ <b>Priority Support:</b> Get faster responses and priority assistance from our support team.\n\n"
+
+        "<b>💰 Premium Pricing Plans:</b>\n"
+        "📅 <b>Weekly Plan:</b>\n"
+        "• 0.1 ETH per week\n"
+        "• 0.35 BNB per week\n\n"
+        "📅 <b>Monthly Plan:</b>\n"
+        "• 0.25 ETH per month\n"
+        "• 1.0 BNB per month\n\n"
+
+        "🔹 <b>Upgrade now</b> to unlock the full power of DeFi-Scope and take control of your investments!\n"
+        "Select a plan below to get started:"
+    )
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("Weekly - Pay with ETH", callback_data="premium_plan_weekly_eth"),
+            InlineKeyboardButton("Weekly - Pay with BNB", callback_data="premium_plan_weekly_bnb")
+        ],
+        [
+            InlineKeyboardButton("Monthly - Pay with ETH", callback_data="premium_plan_monthly_eth"),
+            InlineKeyboardButton("Monthly - Pay with BNB", callback_data="premium_plan_monthly_bnb")
+        ],
+        [
+            InlineKeyboardButton("🔙 Back", callback_data="back")
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        # Try to edit the current message
+        await query.edit_message_text(
+            premium_text,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+    except Exception as e:
+        logging.error(f"Error in handle_premium_info: {e}")
+        # If editing fails, send a new message
+        await query.message.reply_text(
+            premium_text,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        # Delete the original message if possible
+        try:
+            await query.message.delete()
+        except:
+            pass
+
+async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str, currency: str) -> None:
     """Handle premium purchase callback"""
     query = update.callback_query
-    await check_callback_user(update)
+    user = await check_callback_user(update)
     
-    eth_amount = get_eth_price_for_plan(plan)
+    # Get payment details for the selected plan and currency
+    from data.database import get_plan_details, get_plan_payment_details
     
-    # Map plan to details
-    plan_details = {
-        "monthly": {"name": "Monthly", "price": "$19.99", "duration": "1 month"},
-        "quarterly": {"name": "Quarterly", "price": "$49.99", "duration": "3 months"},
-        "annual": {"name": "Annual", "price": "$149.99", "duration": "12 months"}
-    }
+    plan_details = get_plan_details(plan, currency)
+    payment_details = get_plan_payment_details(plan, currency)
     
-    selected_plan = plan_details.get(plan, plan_details["monthly"])
-    
-    # Get wallet address from config (should be in environment variables)
-    wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"  # Replace with your actual wallet
+    # Get wallet address and amount
+    wallet_address = payment_details["wallet_address"]
+    crypto_amount = payment_details["amount"]
+    network_name = "Ethereum" if currency.lower() == "eth" else "Binance Smart Chain"
     
     # Show payment instructions with QR code
     payment_text = (
-        f"🛒 <b>{selected_plan['name']} Premium Plan</b>\n\n"
-        f"Price: {selected_plan['price']} (≈ {eth_amount} ETH)\n"
-        f"Duration: {selected_plan['duration']}\n\n"
+        f"🛒 <b>{plan_details['display_name']} Premium Plan</b>\n\n"
+        f"Price: {plan_details['display_price']}\n"
+        f"Duration: {payment_details['duration_days']} days\n\n"
         f"<b>Payment Instructions:</b>\n\n"
-        f"1. Send <b>exactly {eth_amount} ETH</b> to our wallet address:\n"
+        f"1. Send <b>exactly {crypto_amount} {currency.upper()}</b> to our wallet address:\n"
         f"`{wallet_address}`\n\n"
         f"2. After sending, click 'I've Made Payment' and provide your transaction ID/hash.\n\n"
-        f"<b>Important:</b> Send only ETH on the Ethereum network. Other tokens or networks will not be detected."
+        f"<b>Important:</b>\n"
+        f"• Send only {currency.upper()} on the {network_name} network\n"
+        f"• Other tokens or networks will not be detected\n"
+        f"• Transaction must be confirmed on the blockchain to activate premium"
     )
     
     # Store plan information in user_data for later use
     context.user_data["premium_plan"] = plan
-    context.user_data["eth_amount"] = eth_amount
+    context.user_data["payment_currency"] = currency
+    context.user_data["crypto_amount"] = crypto_amount
     
     keyboard = [
-        [InlineKeyboardButton("I've Made Payment", callback_data=f"payment_made_{plan}")],
-        [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        [InlineKeyboardButton("I've Made Payment", callback_data=f"payment_made_{plan}_{currency}")],
+        [InlineKeyboardButton("🔙 Back", callback_data="premium_info")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1895,19 +1994,25 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
         )
         
         # Optionally, send a QR code as a separate message for easier scanning
-        # This requires the qrcode library
         try:
             import qrcode
             from io import BytesIO
             
-            # Create QR code with the wallet address
+            # Create QR code with the wallet address and amount
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
                 box_size=10,
                 border=4,
             )
-            qr.add_data(f"ethereum:{wallet_address}?value={eth_amount}")
+            
+            # Format QR data based on currency
+            if currency.lower() == "eth":
+                qr_data = f"ethereum:{wallet_address}?value={crypto_amount}"
+            else:
+                qr_data = f"binance:{wallet_address}?value={crypto_amount}"
+                
+            qr.add_data(qr_data)
             qr.make(fit=True)
             
             img = qr.make_image(fill_color="black", back_color="white")
@@ -1921,7 +2026,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
             await context.bot.send_photo(
                 chat_id=update.effective_chat.id,
                 photo=bio,
-                caption=f"Scan this QR code to pay {eth_amount} ETH to our wallet"
+                caption=f"Scan this QR code to pay {crypto_amount} {currency.upper()} to our wallet"
             )
         except ImportError:
             # QR code library not available, skip sending QR code
@@ -1941,7 +2046,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
         except:
             pass
 
-async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str) -> None:
+async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str, currency: str) -> None:
     """
     Handle payment made callback for crypto payments
     
@@ -1965,32 +2070,37 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             # Create a conversation to collect transaction ID
             context.user_data["awaiting_transaction_id"] = True
             context.user_data["premium_plan"] = plan
+            context.user_data["payment_currency"] = currency
             
-            keyboard = [[InlineKeyboardButton("🔙 Cancel", callback_data="back")]]
+            keyboard = [[InlineKeyboardButton("🔙 Cancel", callback_data="premium_info")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             await query.edit_message_text(
                 "📝 <b>Transaction ID Required</b>\n\n"
-                "Please send the transaction hash/ID of your payment.\n\n"
+                f"Please send the transaction hash/ID of your {currency.upper()} payment.\n\n"
                 "You can find this in your wallet's transaction history after sending the payment.",
                 reply_markup=reply_markup,
                 parse_mode=ParseMode.HTML
             )
             return
         
-        # 2. Get payment details based on the plan
-        payment_details = get_plan_payment_details(plan)
+        # 2. Get payment details based on the plan and currency
+        from data.database import get_plan_payment_details
+        payment_details = get_plan_payment_details(plan, currency)
+        
         expected_amount = payment_details["amount"]
         wallet_address = payment_details["wallet_address"]
         duration_days = payment_details["duration_days"]
+        network = payment_details["network"]
         
         # 3. Verify the payment on the blockchain
-        from src.services.payment import verify_crypto_payment
+        from services.payment import verify_crypto_payment
         
         verification_result = await verify_crypto_payment(
             transaction_id=transaction_id,
             expected_amount=expected_amount,
-            wallet_address=wallet_address
+            wallet_address=wallet_address,
+            network=network
         )
         
         # 4. Process verification result
@@ -2001,18 +2111,24 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             premium_until = now + timedelta(days=duration_days)
             
             # Update user's premium status in the database
-            from data.database import update_user_premium_status, set_premium_status, record_premium_purchase
+            from data.database import update_user_premium_status
             
-            # Use the existing functions to update user status
-            set_premium_status(user.user_id, True, duration_days)
-            record_premium_purchase(user.user_id, plan, duration_days)
+            # Update user status
+            update_user_premium_status(
+                user_id=user.user_id,
+                is_premium=True,
+                premium_until=premium_until,
+                plan=plan,
+                payment_currency=currency,
+                transaction_id=transaction_id
+            )
             
             # Clear transaction data from user_data
             if "transaction_id" in context.user_data:
                 del context.user_data["transaction_id"]
             
             # Log successful premium activation
-            logging.info(f"Premium activated for user {user.user_id}, plan: {plan}, until: {premium_until}")
+            logging.info(f"Premium activated for user {user.user_id}, plan: {plan}, currency: {currency}, until: {premium_until}")
             
             # Create confirmation message with back button
             keyboard = [[InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]]
@@ -2024,7 +2140,7 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
                 f"Thank you for upgrading to DeFi-Scope Premium.\n\n"
                 f"<b>Transaction Details:</b>\n"
                 f"• Plan: {plan.capitalize()}\n"
-                f"• Amount: {expected_amount} ETH\n"
+                f"• Amount: {expected_amount} {currency.upper()}\n"
                 f"• Transaction: {transaction_id[:8]}...{transaction_id[-6:]}\n\n"
                 f"Your premium subscription is now active until: "
                 f"<b>{premium_until.strftime('%d %B %Y')}</b>\n\n"
@@ -2056,8 +2172,8 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             elif "amount mismatch" in error_message.lower():
                 received = verification_result.get("received", 0)
                 error_details = (
-                    f"• Expected payment: {expected_amount} ETH\n"
-                    f"• Received payment: {received} ETH\n"
+                    f"• Expected payment: {expected_amount} {currency.upper()}\n"
+                    f"• Received payment: {received} {currency.upper()}\n"
                     "• Please ensure you sent the exact amount"
                 )
             elif "pending confirmation" in error_message.lower():
@@ -2075,9 +2191,9 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             
             # Create keyboard with options
             keyboard = [
-                [InlineKeyboardButton("Try Again", callback_data=f"payment_retry_{plan}")],
+                [InlineKeyboardButton("Try Again", callback_data=f"payment_retry_{plan}_{currency}")],
                 [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")],
-                [InlineKeyboardButton("🔙 Back", callback_data="back")]
+                [InlineKeyboardButton("🔙 Back", callback_data="premium_info")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -2098,9 +2214,9 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         # Create keyboard with options
         keyboard = [
-            [InlineKeyboardButton("Try Again", callback_data=f"premium_{plan}")],
+            [InlineKeyboardButton("Try Again", callback_data=f"premium_plan_{plan}_{currency}")],
             [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="premium_info")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -2113,31 +2229,88 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             parse_mode=ParseMode.HTML
         )
 
-# Helper function to get payment details based on plan
-def get_plan_payment_details(plan: str) -> Dict[str, Any]:
-    """Get payment details for a specific premium plan"""
-    # Wallet address should be stored in environment variables in production
-    wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+async def handle_payment_retry(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str, currency: str) -> None:
+    """Handle payment retry callback"""
+    query = update.callback_query
     
-    plans = {
-        "monthly": {
-            "amount": 0.01,  # ETH amount (example)
-            "duration_days": 30,
-            "wallet_address": wallet_address
-        },
-        "quarterly": {
-            "amount": 0.025,  # ETH amount (example)
-            "duration_days": 90,
-            "wallet_address": wallet_address
-        },
-        "annual": {
-            "amount": 0.08,  # ETH amount (example)
-            "duration_days": 365,
-            "wallet_address": wallet_address
-        }
-    }
+    # Clear the stored transaction ID
+    if "transaction_id" in context.user_data:
+        del context.user_data["transaction_id"]
     
-    return plans.get(plan, plans["monthly"])
+    # Set up to collect a new transaction ID
+    context.user_data["awaiting_transaction_id"] = True
+    context.user_data["premium_plan"] = plan
+    context.user_data["payment_currency"] = currency
+    
+    keyboard = [[InlineKeyboardButton("🔙 Cancel", callback_data="premium_info")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        "📝 <b>New Transaction ID Required</b>\n\n"
+        f"Please send the new transaction hash/ID of your {currency.upper()} payment.\n\n"
+        "You can find this in your wallet's transaction history after sending the payment.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+# Add a handler for transaction ID input
+async def handle_transaction_id_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle transaction ID input from user"""
+    # Check if we're awaiting a transaction ID
+    if not context.user_data.get("awaiting_transaction_id"):
+        return
+    
+    # Get the transaction ID from the message
+    transaction_id = update.message.text.strip()
+    
+    # Basic validation - transaction IDs are typically hex strings starting with 0x
+    if not (transaction_id.startswith("0x") and len(transaction_id) >= 66):
+        await update.message.reply_text(
+            "⚠️ <b>Invalid Transaction ID</b>\n\n"
+            "The transaction ID should start with '0x' and be at least 66 characters long.\n"
+            "Please check your wallet and send the correct transaction hash.",
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Store the transaction ID
+    context.user_data["transaction_id"] = transaction_id
+    
+    # Get the plan and currency from user_data
+    plan = context.user_data.get("premium_plan")
+    currency = context.user_data.get("payment_currency")
+    
+    if not plan or not currency:
+        await update.message.reply_text(
+            "❌ <b>Error</b>\n\n"
+            "Could not find your subscription plan details. Please start over.",
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Clear the awaiting flag
+    context.user_data["awaiting_transaction_id"] = False
+    
+    # Send confirmation and start verification
+    confirmation_message = await update.message.reply_text(
+        f"✅ Transaction ID received: `{transaction_id[:8]}...{transaction_id[-6:]}`\n\n"
+        f"Now verifying your payment on the {currency.upper()} blockchain...",
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Create verification button
+    keyboard = [
+        [InlineKeyboardButton("Verify Payment", callback_data=f"payment_made_{plan}_{currency}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Update the message with a button to start verification
+    await confirmation_message.edit_text(
+        f"✅ Transaction ID received: `{transaction_id[:8]}...{transaction_id[-6:]}`\n\n"
+        f"Click the button below to verify your payment on the {currency.upper()} blockchain.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
 
 # Helper function to send a welcome message to new premium users
 async def send_premium_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, plan: str, premium_until: datetime) -> None:
@@ -2155,7 +2328,7 @@ async def send_premium_welcome_message(update: Update, context: ContextTypes.DEF
         f"• <b>Wallet & Token Tracking</b>\n"
         f"  Use /track commands to monitor wallets and tokens\n\n"
         f"Need help with premium features? Type /premium_help anytime!\n\n"
-        f"Your subscription is active until: <b>{premium_until.strftime('%d %B %Y')}</b>"
+        f"Your {plan} subscription is active until: <b>{premium_until.strftime('%d %B %Y')}</b>"
     )
     
     # Send as a new message to avoid replacing the payment confirmation
@@ -2164,8 +2337,6 @@ async def send_premium_welcome_message(update: Update, context: ContextTypes.DEF
         text=welcome_message,
         parse_mode=ParseMode.HTML
     )
-
-async def handle_payment_retry(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str) -> None:
     """Handle payment retry callback"""
     query = update.callback_query
     

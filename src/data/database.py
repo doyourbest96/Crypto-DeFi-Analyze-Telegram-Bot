@@ -5,7 +5,7 @@ from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.database import Database
 from pymongo.collection import Collection
 
-from config import MONGODB_URI, DB_NAME
+from config import MONGODB_URI, DB_NAME, SUBSCRIPTION_WALLET_ADDRESS
 from data.models import User, UserScan, TokenData, WalletData, TrackingSubscription, KOLWallet
 
 # Global database connection
@@ -443,59 +443,67 @@ def record_referral(referrer_id: int, referred_id: int) -> None:
         {"$inc": {"referral_count": 1}}
     )
 
-def record_premium_purchase(user_id: int, plan_type: str, duration_days: int) -> None:
-    """Record a premium purchase transaction"""
-    db = get_database()
-    
-    # Create transaction record
-    db.transactions.insert_one({
-        "user_id": user_id,
-        "type": "premium_purchase",
-        "plan_type": plan_type,
-        "duration_days": duration_days,
-        "amount": get_plan_price(plan_type),
-        "date": datetime.now()
-    })
-
-def get_plan_price(plan_type: str) -> float:
-    """Get the price for a premium plan"""
-    prices = {
-        "monthly": 19.99,
-        "quarterly": 49.99,
-        "annual": 149.99
-    }
-    return prices.get(plan_type, 0.0)
-
-def get_plan_payment_details(plan: str) -> Dict[str, Any]:
-    """Get payment details for a specific premium plan"""
-    # Wallet address should be stored in environment variables in production
-    wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"
-    
+def get_plan_details(plan: str, currency: str = "eth") -> Dict[str, Any]:
+    """Get details for a specific premium plan and currency"""
     plans = {
+        "weekly": {
+            "eth": {
+                "amount": 0.1,
+                "duration_days": 7,
+                "display_name": "Weekly",
+                "display_price": "0.1 ETH"
+            },
+            "bnb": {
+                "amount": 0.35,
+                "duration_days": 7,
+                "display_name": "Weekly",
+                "display_price": "0.35 BNB"
+            }
+        },
         "monthly": {
-            "amount": 0.01,  # ETH amount (example)
-            "duration_days": 30,
-            "wallet_address": wallet_address
-        },
-        "quarterly": {
-            "amount": 0.025,  # ETH amount (example)
-            "duration_days": 90,
-            "wallet_address": wallet_address
-        },
-        "annual": {
-            "amount": 0.08,  # ETH amount (example)
-            "duration_days": 365,
-            "wallet_address": wallet_address
+            "eth": {
+                "amount": 0.25,
+                "duration_days": 30,
+                "display_name": "Monthly",
+                "display_price": "0.25 ETH"
+            },
+            "bnb": {
+                "amount": 1.0,
+                "duration_days": 30,
+                "display_name": "Monthly",
+                "display_price": "1.0 BNB"
+            }
         }
     }
     
-    return plans.get(plan, plans["monthly"])
+    return plans.get(plan, {}).get(currency, plans["monthly"]["eth"])
+
+def get_plan_payment_details(plan: str, currency: str = "eth") -> Dict[str, Any]:
+    """Get payment details for a specific premium plan"""
+    
+    plan_details = get_plan_details(plan, currency)
+    
+    if currency.lower() == "bnb":
+        wallet_address = SUBSCRIPTION_WALLET_ADDRESS
+        network = "bnb"
+    else:
+        wallet_address = SUBSCRIPTION_WALLET_ADDRESS
+        network = "eth"
+    
+    return {
+        "amount": plan_details["amount"],
+        "duration_days": plan_details["duration_days"],
+        "wallet_address": wallet_address,
+        "network": network,
+        "currency": currency.upper()
+    }
 
 def update_user_premium_status(
     user_id: int,
     is_premium: bool,
     premium_until: datetime,
     plan: str,
+    payment_currency: str = "eth",
     transaction_id: str = None
 ) -> None:
     """
@@ -505,7 +513,8 @@ def update_user_premium_status(
         user_id: The Telegram user ID
         is_premium: Whether the user has premium status
         premium_until: The date until which premium is active
-        plan: The premium plan (monthly, quarterly, annual)
+        plan: The premium plan (weekly or monthly)
+        payment_currency: The currency used for payment (eth or bnb)
         transaction_id: The payment transaction ID (optional)
     """
     try:
@@ -519,22 +528,27 @@ def update_user_premium_status(
                 "is_premium": is_premium,
                 "premium_until": premium_until,
                 "premium_plan": plan,
+                "payment_currency": payment_currency,
                 "last_payment_id": transaction_id,
                 "updated_at": datetime.now()
             }}
         )
+        
+        # Get plan details
+        plan_details = get_plan_details(plan, payment_currency)
         
         # Record the transaction
         db.transactions.insert_one({
             "user_id": user_id,
             "type": "premium_purchase",
             "plan_type": plan,
-            "amount": get_plan_price(plan),
+            "currency": payment_currency.upper(),
+            "amount": plan_details["amount"],
             "transaction_id": transaction_id,
             "date": datetime.now()
         })
         
-        logging.info(f"Updated premium status for user {user_id}: premium={is_premium}, plan={plan}, until={premium_until}")
+        logging.info(f"Updated premium status for user {user_id}: premium={is_premium}, plan={plan}, currency={payment_currency}, until={premium_until}")
         
     except Exception as e:
         logging.error(f"Error updating user premium status: {e}")
