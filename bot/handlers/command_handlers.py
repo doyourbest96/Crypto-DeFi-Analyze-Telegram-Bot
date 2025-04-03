@@ -87,70 +87,51 @@ async def validate_address(update: Update, address: str) -> bool:
     return True
 
 # Command handlers
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the /start command"""
     await check_user_exists(update)
     
     welcome_message = (
-        f"""🚀 Welcome to <b>DeFi-Scope Bot</b>, {update.effective_user.first_name}! 🎉\n\n"""
-        f"🔎 <b>Your Ultimate DeFi Intelligence Bot!</b>\n"
-        f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"🔥 <b>Token Analysis & Market Insights:</b>\n"
-        f"• /fb [contract] - First buyers of a token 🏆\n"
-        f"• /mpw [contract] - Most profitable wallets 💸\n"
-        f"• /kol [contract] - KOL wallets profitability 🎤\n"
-        f"• /ath [contract] - All-time high (ATH) market cap 📈\n\n"
-        
-        f"🕵️ <b>Wallet & Token Tracking:</b>\n"
-        f"• /dw [contract] - Deployer wallet & token history 🏗️ (Premium)\n"
-        f"• /th [contract] - Top 10 holders & whale tracking 🐳 (Premium)\n"
-        f"• /track [contract] - Monitor whale & dev sales 🔔 (Premium)\n"
-        f"• /track wd [wallet] - Track wallet for new token deployments 🚀 (Premium)\n"
-        f"• /track wbs [wallet] - Track wallet buys & sells 💼 (Premium)\n\n"
-        
-        f"💰 <b>High Net Worth & Profitability Scans:</b>\n"
-        f"• /pw [trades] [buy amount] [days] [contract] - Profitable wallets 📊 (Premium)\n"
-        f"• /hnw [contract] - High net worth wallet holders 💎 (Premium)\n\n"
-        
-        f"🤖 <b>How to get started?</b>\n"
-        f"Simply type a command and let me do the magic! ✨\n"
-        f"Need help? Type /help for more details. 🚀\n\n"
-        
-        f"🔑 <b>Upgrade to Premium for unlimited scans and advanced tracking!</b>\n\n"
-        f"Happy Trading! 🚀💰"
-    ) 
+        "🆘 <b>DeFi-Scope Bot Help</b>\n\n"
+
+        "<b>📊 Token Analysis:</b>\n"
+        "🔹 <b>First Buyers & Profits:</b> Find the first 1-50 wallets that bought a token and their profits.\n"
+        "🔹 <b>Market Cap & ATH:</b> Check the all-time high (ATH) market cap of any token and its drop percentage.\n"
+        "🔹 <b>Most Profitable Wallets:</b> See the top wallets making the most profit from a token.\n"
+        "🔹 <b>Deployer Wallet Scan:</b> (Premium) Scan a token contract to reveal its deployer and their past tokens.\n"
+        "🔹 <b>Top Holders & Whale Watch:</b> (Premium) Check top 10 holders and whale activity in any token.\n\n"
+
+        "<b>🕵️ Wallet Analysis:</b>\n"
+        "🔹 <b>Wallet Holding Duration:</b> See how long a wallet holds a token before selling.\n"
+        "🔹 <b>Wallet Profitability:</b> Find the most profitable wallets in a token.\n"
+        "🔹 <b>Tokens Deployed by Wallet:</b> (Premium) See all tokens ever deployed by a wallet.\n\n"
+
+        "<b>🔔 Tracking & Monitoring:</b>\n"
+        "🔹 <b>Track Buy/Sell Activity:</b> (Premium) Get alerts when a wallet buys/sells tokens.\n"
+        "🔹 <b>Track New Token Deployments:</b> (Premium) Get notified when a wallet deploys a new token.\n"
+        "🔹 <b>Profitable Wallets:</b> (Premium) Track wallets with the highest profits.\n"
+        "🔹 <b>High Net Worth Wallet Holders:</b> (Premium) Find wallets holding over $10,000 in tokens.\n\n"
+
+        "<b>📜 Special Lists:</b>\n"
+        "🔹 <b>Profitable Token Deployers:</b> Check the most profitable token deployer wallets.\n"
+        "🔹 <b>KOL Wallets Profitability:</b> Track Key Opinion Leader (KOL) wallets and their PNL.\n\n"
+
+        "<b>⚙️ Other Options:</b>\n"
+        "🔹 <b>Upgrade to Premium:</b> Unlock unlimited scans and premium features.\n"
+        "🔹 <b>Show Help:</b> Display this help menu anytime.\n"
+    )
     
-    keyboard = [
+    keyboard_main = [
+        [InlineKeyboardButton("📊 Token Analysis", callback_data="token_analysis")],
+        [InlineKeyboardButton("🕵️ Wallet Scans & Tracking", callback_data="wallet_tracking")],
+        [InlineKeyboardButton("🐳 Whale & Deployer Tracking", callback_data="whale_tracking")],
         [
-            InlineKeyboardButton("🔍 Scan Token", callback_data="scan_token"),
-            InlineKeyboardButton("👛 Scan Wallet", callback_data="scan_wallet")
-        ],
-        [
-            InlineKeyboardButton("📈 All-Time High (ATH)", callback_data="ath"),
-            InlineKeyboardButton("🐳 Top Holders & Whales", callback_data="top_holders")
-        ],
-        [
-            InlineKeyboardButton("💰 Profitable Wallets", callback_data="profitable_wallets"),
-            InlineKeyboardButton("💎 High Net Worth Wallets", callback_data="high_net_worth")
-        ],
-        [
-            InlineKeyboardButton("📊 Track Wallet Buys/Sells", callback_data="track_wallet_trades"),
-            InlineKeyboardButton("🚀 Track New Token Deployments", callback_data="track_wallet_deployments")
-        ],
-        [
-            InlineKeyboardButton("🏗️ Deployer Wallet Scan", callback_data="deployer_wallet_scan"),
-            InlineKeyboardButton("🔔 Track Whale & Dev Sales", callback_data="track_whale_sales")
-        ],
-        [
-            InlineKeyboardButton("💎 Premium Features", callback_data="premium_info")
-        ],
-        [
-            InlineKeyboardButton("📝 Help", callback_data="help"),
-            InlineKeyboardButton("🔙 Back to Menu", callback_data="back")
-        ]
+            InlineKeyboardButton("❓ Help", callback_data="general_help"),
+            InlineKeyboardButton("🔙 Back", callback_data="back")
+        ],  
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    reply_markup = InlineKeyboardMarkup(keyboard_main)
     
     await update.message.reply_text(
         welcome_message,
