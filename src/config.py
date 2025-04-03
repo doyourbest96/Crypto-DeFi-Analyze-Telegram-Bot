@@ -11,6 +11,8 @@ ADMIN_USER_IDS = list(map(int, os.getenv("ADMIN_USER_IDS", "").split(",")))
 # Blockchain configuration
 WEB3_PROVIDER_URI = os.getenv("WEB3_PROVIDER_URI")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY")
+CHAINLINK_ETH_USD_PRICE_FEED_ADDRESS = os.getenv("CHAINLINK_ETH_USD_PRICE_FEED_ADDRESS")
+SUBSCRIPTION_WALLET_ADDRESS=os.getenv("SUBSCRIPTION_WALLET_ADDRESS")
 
 # Database configuration
 MONGODB_URI = os.getenv("MONGODB_URI")

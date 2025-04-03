@@ -53,8 +53,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_whale_deployer_help(update, context)
     elif callback_data == "premium_info":
         await handle_premium_info(update, context)
-    elif callback_data.startswith("premium_"):
-        plan = callback_data.replace("premium_", "")
+    elif callback_data.startswith("premium_plan_"):
+        plan = callback_data.replace("premium_plan_", "")
         await handle_premium_purchase(update, context, plan)
     elif callback_data.startswith("payment_made_"):
         plan = callback_data.replace("payment_made_", "")
@@ -1814,9 +1814,9 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     keyboard = [
         [
-            InlineKeyboardButton("📅  Monthly Plan      $19.99/month", callback_data="premium_monthly"),
-            InlineKeyboardButton("📅  Quarterly Plan    $49.99/quarter", callback_data="premium_quarterly"),
-            InlineKeyboardButton("📅  Annual Plan       $149.99/year", callback_data="premium_annual")
+            InlineKeyboardButton("📅  Monthly Plan      $19.99/month", callback_data="premium_plan_monthly"),
+            InlineKeyboardButton("📅  Quarterly Plan    $49.99/quarter", callback_data="premium_plan_quarterly"),
+            InlineKeyboardButton("📅  Annual Plan       $149.99/year", callback_data="premium_plan_annual")
         ],
         [
             InlineKeyboardButton("🔙 Back", callback_data="back")
@@ -1848,14 +1848,9 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str) -> None:
     """Handle premium purchase callback"""
     query = update.callback_query
-    user = await check_callback_user(update)
+    await check_callback_user(update)
     
-    # Get current ETH price
-    from src.services.payment import get_current_eth_price, get_eth_price_for_plan
-    eth_price = await get_current_eth_price()
-    
-    # Calculate ETH amount based on plan and current price
-    eth_amount = get_eth_price_for_plan(plan, eth_price)
+    eth_amount = get_eth_price_for_plan(plan)
     
     # Map plan to details
     plan_details = {
