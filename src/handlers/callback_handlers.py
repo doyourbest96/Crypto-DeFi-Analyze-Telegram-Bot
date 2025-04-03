@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Dict, Any
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -12,11 +12,12 @@ from data.database import (
 )
 from data.models import User
 from data.database import get_plan_price
-from bot.services.blockchain import *
-from bot.services.analytics import *
-from bot.services.notification import *
-from bot.services.user_management import *
-from bot.services.payment import *
+
+from services.blockchain import *
+from services.analytics import *
+from services.notification import *
+from services.user_management import *
+from services.payment import *
 
 # Helper function to check user exists
 async def check_callback_user(update: Update) -> User:
@@ -1850,7 +1851,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
     user = await check_callback_user(update)
     
     # Get current ETH price
-    from bot.services.payment import get_current_eth_price, get_eth_price_for_plan
+    from src.services.payment import get_current_eth_price, get_eth_price_for_plan
     eth_price = await get_current_eth_price()
     
     # Calculate ETH amount based on plan and current price
@@ -1989,7 +1990,7 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         duration_days = payment_details["duration_days"]
         
         # 3. Verify the payment on the blockchain
-        from bot.services.payment import verify_crypto_payment
+        from src.services.payment import verify_crypto_payment
         
         verification_result = await verify_crypto_payment(
             transaction_id=transaction_id,
