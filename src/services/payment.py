@@ -1,7 +1,8 @@
 import logging
 import aiohttp
+from web3 import Web3
 from typing import Dict, Any
-from config import ETHERSCAN_API_KEY
+from config import ETHERSCAN_API_KEY, WEB3_PROVIDER_URI, CHAINLINK_ETH_USD_PRICE_FEED_ADDRESS
 from data.database import get_plan_price
 
 async def verify_crypto_payment(
@@ -130,7 +131,6 @@ async def verify_crypto_payment(
         logging.error(f"Error verifying crypto payment: {e}")
         return {"verified": False, "error": str(e)}
 
-
 def get_eth_price_for_plan(plan: str) -> float:
     """
     Calculate the ETH amount required for a plan based on current ETH price
@@ -143,22 +143,41 @@ def get_eth_price_for_plan(plan: str) -> float:
         The amount of ETH required for the plan
     """
     usd_price = get_plan_price(plan)
-    eth_price_usd = get_current_eth_price()
+    eth_price_usd = get_eth_price_chainlink()
     eth_amount = usd_price / eth_price_usd
     
     # Round to 6 decimal places for readability
     return round(eth_amount, 6)
 
-async def get_current_eth_price() -> float:
-    """Get the current ETH price in USD from CoinGecko API"""
+async def get_eth_price_chainlink() -> float:
+    """Get ETH price from Chainlink price feed"""
     try:
-        async with aiohttp.ClientSession() as session:
-            url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("ethereum", {}).get("usd", 3000.0)
-                return 3000.0  # Default fallback price
+        # Connect to an Ethereum node (use your own provider URL)
+        w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{WEB3_PROVIDER_URI}'))
+        
+        abi = [
+            {
+                "inputs": [],
+                "name": "latestRoundData",
+                "outputs": [
+                    {"internalType": "uint80", "name": "roundId", "type": "uint80"},
+                    {"internalType": "int256", "name": "answer", "type": "int256"},
+                    {"internalType": "uint256", "name": "startedAt", "type": "uint256"},
+                    {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
+                    {"internalType": "uint80", "name": "answeredInRound", "type": "uint80"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]
+        
+        contract = w3.eth.contract(address=CHAINLINK_ETH_USD_PRICE_FEED_ADDRESS, abi=abi)
+        
+        round_data = contract.functions.latestRoundData().call()
+        
+        price = round_data[1] / 10**8
+        
+        return float(price)
     except Exception as e:
-        logging.error(f"Error getting ETH price: {e}")
-        return 3000.0  # Default fallback price
+        logging.error(f"Error getting ETH price from Chainlink: {e}")
+        return 2000.0  # Default fallback price
