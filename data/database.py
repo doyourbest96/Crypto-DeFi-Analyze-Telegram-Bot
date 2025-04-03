@@ -465,3 +465,77 @@ def get_plan_price(plan_type: str) -> float:
         "annual": 149.99
     }
     return prices.get(plan_type, 0.0)
+
+def get_plan_payment_details(plan: str) -> Dict[str, Any]:
+    """Get payment details for a specific premium plan"""
+    # Wallet address should be stored in environment variables in production
+    wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+    
+    plans = {
+        "monthly": {
+            "amount": 0.01,  # ETH amount (example)
+            "duration_days": 30,
+            "wallet_address": wallet_address
+        },
+        "quarterly": {
+            "amount": 0.025,  # ETH amount (example)
+            "duration_days": 90,
+            "wallet_address": wallet_address
+        },
+        "annual": {
+            "amount": 0.08,  # ETH amount (example)
+            "duration_days": 365,
+            "wallet_address": wallet_address
+        }
+    }
+    
+    return plans.get(plan, plans["monthly"])
+
+def update_user_premium_status(
+    user_id: int,
+    is_premium: bool,
+    premium_until: datetime,
+    plan: str,
+    transaction_id: str = None
+) -> None:
+    """
+    Update a user's premium status in the database and record the transaction
+    
+    Args:
+        user_id: The Telegram user ID
+        is_premium: Whether the user has premium status
+        premium_until: The date until which premium is active
+        plan: The premium plan (monthly, quarterly, annual)
+        transaction_id: The payment transaction ID (optional)
+    """
+    try:
+        # Get database connection
+        db = get_database()
+        
+        # Update user premium status
+        db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "is_premium": is_premium,
+                "premium_until": premium_until,
+                "premium_plan": plan,
+                "last_payment_id": transaction_id,
+                "updated_at": datetime.now()
+            }}
+        )
+        
+        # Record the transaction
+        db.transactions.insert_one({
+            "user_id": user_id,
+            "type": "premium_purchase",
+            "plan_type": plan,
+            "amount": get_plan_price(plan),
+            "transaction_id": transaction_id,
+            "date": datetime.now()
+        })
+        
+        logging.info(f"Updated premium status for user {user_id}: premium={is_premium}, plan={plan}, until={premium_until}")
+        
+    except Exception as e:
+        logging.error(f"Error updating user premium status: {e}")
+        raise
