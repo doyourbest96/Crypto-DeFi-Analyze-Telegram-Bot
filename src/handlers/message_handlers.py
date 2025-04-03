@@ -7,9 +7,9 @@ from telegram.constants import ParseMode
 
 from config import FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY
 from data.database import get_token_data, get_wallet_data
-from bot.services.blockchain import is_valid_address, get_first_buyers, get_token_holders
-from bot.services.user_management import get_or_create_user, check_rate_limit_service
-from bot.handlers.callback_handlers import handle_start_menu, handle_payment_made, handle_expected_input
+from src.services.blockchain import is_valid_address, get_first_buyers, get_token_holders
+from src.services.user_management import get_or_create_user, check_rate_limit_service
+from src.handlers.callback_handlers import handle_start_menu, handle_payment_made, handle_expected_input
 
 async def handle_transaction_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     """
