@@ -7,7 +7,6 @@ from pymongo.collection import Collection
 
 from config import MONGODB_URI, DB_NAME, SUBSCRIPTION_WALLET_ADDRESS
 from data.models import User, UserScan, TokenData, WalletData, TrackingSubscription, KOLWallet
-from utils import get_plan_details
 from services.payment import get_plan_payment_details
 
 _db: Optional[Database] = None
