@@ -11,9 +11,6 @@ from .blockchain import get_token_info, get_wallet_info
 from data.models import TrackingSubscription, User
 from data.database import get_user, get_user_tracking_subscriptions, get_all_users, get_users_with_expiring_premium, get_all_active_tracking_subscriptions
 
-
-# Initialize bot instance
-# This would be properly initialized in the main application
 bot = None
 
 def set_bot(bot_instance: Bot) -> None:
