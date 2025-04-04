@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from data.models import User
 from data.database import (
     get_user, save_user, update_user_activity, get_user_scan_count,
-    increment_user_scan_count, set_premium_status as db_set_premium_status,
+    increment_user_scan_count, set_premium_status,
     cleanup_expired_premium, get_user_counts, set_user_admin_status as db_set_user_admin_status
 )
 
@@ -29,23 +29,6 @@ async def get_or_create_user(user_id: int, username: Optional[str] = None,
     
     return user
 
-async def check_premium_status(user_id: int) -> bool:
-    """Check if a user has premium status"""
-    user = get_user(user_id)
-    if not user:
-        return False
-    
-    return user.is_premium
-
-async def set_premium_status(user_id: int, is_premium: bool, duration_days: int = 30) -> bool:
-    """Set a user's premium status"""
-    try:
-        db_set_premium_status(user_id, is_premium, duration_days)
-        return True
-    except Exception as e:
-        logging.error(f"Error setting premium status for user {user_id}: {e}")
-        return False
-
 async def extend_premium_subscription(user_id: int, additional_days: int) -> bool:
     """Extend an existing premium subscription"""
     user = get_user(user_id)
@@ -59,10 +42,10 @@ async def extend_premium_subscription(user_id: int, additional_days: int) -> boo
             current_expiry = user.premium_until
             new_expiry = current_expiry + timedelta(days=additional_days)
             days_until_expiry = (new_expiry - datetime.now()).days
-            db_set_premium_status(user_id, True, days_until_expiry)
+            set_premium_status(user_id, True, days_until_expiry)
         else:
             # If not premium, start new subscription
-            db_set_premium_status(user_id, True, additional_days)
+            set_premium_status(user_id, True, additional_days)
         
         return True
     except Exception as e:
@@ -159,42 +142,6 @@ async def get_user_usage_stats(user_id: int) -> Dict[str, Any]:
         "account_created": user.created_at.strftime("%d %B %Y") if user.created_at else "Unknown",
         "last_active": user.last_active.strftime("%d %B %Y %H:%M") if user.last_active else "Unknown"
     }
-
-async def process_premium_purchase(user_id: int, plan_type: str) -> Tuple[bool, str, int]:
-    """
-    Process a premium purchase
-    Returns (success, plan_name, duration_days)
-    """
-    try:
-        duration_days = 0
-        plan_name = ""
-        
-        if plan_type == "monthly":
-            duration_days = 30
-            plan_name = "Monthly"
-        elif plan_type == "quarterly":
-            duration_days = 90
-            plan_name = "Quarterly"
-        elif plan_type == "annual":
-            duration_days = 365
-            plan_name = "Annual"
-        else:
-            return False, "", 0
-        
-        # Set premium status
-        success = await set_premium_status(user_id, True, duration_days)
-        
-        if success:
-            # Record the purchase in transaction history
-            from data.database import record_premium_purchase
-            record_premium_purchase(user_id, plan_type, duration_days)
-            
-            return True, plan_name, duration_days
-        
-        return False, "", 0
-    except Exception as e:
-        logging.error(f"Error processing premium purchase for user {user_id}: {e}")
-        return False, "", 0
 
 async def cleanup_expired_premium_subscriptions() -> int:
     """

@@ -3,24 +3,25 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 from data.models import User
+from config import SUBSCRIPTION_WALLET_ADDRESS
 
-from src.services.blockchain import * 
-from src.services.analytics import *
-from src.services.notification import *
-from src.services.user_management import *
+from services.blockchain import * 
+from services.analytics import *
+from services.notification import *
+from services.user_management import *
 
-async def check_user_exists(update: Update) -> User:
+async def check_callback_user(update: Update) -> User:
     """Check if user exists in database, create if not, and update activity"""
     return await get_or_create_user(
-        user_id=update.effective_user.id,
-        username=update.effective_user.username,
-        first_name=update.effective_user.first_name,
-        last_name=update.effective_user.last_name
+        user_id=update.callback_query.from_user.id,
+        username=update.callback_query.from_user.username,
+        first_name=update.callback_query.from_user.first_name,
+        last_name=update.callback_query.from_user.last_name
     )
 
 async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_TYPE, feature_name: str) -> bool:
     """Check if a premium feature is being accessed by a non-premium user"""
-    user = await check_user_exists(update)
+    user = await check_callback_user(update)
     
     if not user.is_premium:
         keyboard = [
@@ -42,7 +43,7 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
 
 async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
     """Check if user has exceeded their daily scan limit"""
-    user = await check_user_exists(update)
+    user = await check_callback_user(update)
     user_id = user.user_id
     
     # Use the service function to check rate limit
@@ -68,11 +69,48 @@ async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
     await increment_scan_count(user_id, scan_type)
     return 
 
-async def validate_address(update: Update, address: str) -> bool:
-    """Validate if the provided string is a valid Ethereum address"""
-    if not address or not is_valid_address(address):
-        await update.message.reply_text(
-            "⚠️ Please provide a valid Ethereum address or token contract address."
-        )
-        return False
-    return True
+async def send_premium_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, plan: str, premium_until: datetime) -> None:
+    """Send a welcome message with premium tips to new premium users"""
+    welcome_message = (
+        f"🎉 <b>Welcome to DeFi-Scope Premium!</b>\n\n"
+        f"Hi {user.first_name}, thank you for upgrading to our premium service.\n\n"
+        f"<b>Here are some premium features you can now access:</b>\n\n"
+        f"• <b>Unlimited Token & Wallet Scans</b>\n"
+        f"  Use /scan_token and /scan_wallet as much as you need\n\n"
+        f"• <b>Deployer Wallet Analysis</b>\n"
+        f"  Use /dw [contract] to analyze token deployers\n\n"
+        f"• <b>Top Holders & Whale Tracking</b>\n"
+        f"  Use /th [contract] to see top token holders\n\n"
+        f"• <b>Wallet & Token Tracking</b>\n"
+        f"  Use /track commands to monitor wallets and tokens\n\n"
+        f"Need help with premium features? Type /premium_help anytime!\n\n"
+        f"Your {plan} subscription is active until: <b>{premium_until.strftime('%d %B %Y')}</b>"
+    )
+    
+    # Send as a new message to avoid replacing the payment confirmation
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=welcome_message,
+        parse_mode=ParseMode.HTML
+    )
+    """Handle payment retry callback"""
+    query = update.callback_query
+    
+    # Clear the stored transaction ID
+    if "transaction_id" in context.user_data:
+        del context.user_data["transaction_id"]
+    
+    # Set up to collect a new transaction ID
+    context.user_data["awaiting_transaction_id"] = True
+    context.user_data["premium_plan"] = plan
+    
+    keyboard = [[InlineKeyboardButton("🔙 Cancel", callback_data="back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        "📝 <b>New Transaction ID Required</b>\n\n"
+        "Please send the new transaction hash/ID of your payment.\n\n"
+        "You can find this in your wallet's transaction history after sending the payment.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )

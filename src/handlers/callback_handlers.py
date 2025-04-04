@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any
+from datetime import datetime
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -10,8 +11,8 @@ from data.database import (
     get_token_data, get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions
 )
-from data.models import User
-from data.database import get_plan_details, get_plan_payment_details
+from data.models import User, TrackingSubscription
+from data.database import get_plan_details, get_plan_payment_details, save_tracking_subscription
 
 from services.blockchain import *
 from services.analytics import *
@@ -19,17 +20,8 @@ from services.notification import *
 from services.user_management import *
 from services.payment import *
 
-# Helper function to check user exists
-async def check_callback_user(update: Update) -> User:
-    """Check if user exists in database, create if not, and update activity"""
-    return await get_or_create_user(
-        user_id=update.callback_query.from_user.id,
-        username=update.callback_query.from_user.username,
-        first_name=update.callback_query.from_user.first_name,
-        last_name=update.callback_query.from_user.last_name
-    )
+from utils import send_premium_welcome_message, check_callback_user
 
-# Callback query handlers
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle all callback queries from inline keyboards"""
     query = update.callback_query
@@ -138,7 +130,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "Sorry, I couldn't process that request. Please try again.", show_alert=True
         )
 
-# Specific callback handlers
 async def handle_scan_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle scan token callback"""
     query = update.callback_query
@@ -151,7 +142,7 @@ async def handle_scan_token(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -187,7 +178,7 @@ async def handle_scan_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -322,7 +313,7 @@ async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -330,7 +321,7 @@ async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -359,7 +350,7 @@ async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -367,7 +358,7 @@ async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -395,7 +386,7 @@ async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, w
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -403,7 +394,7 @@ async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, w
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -432,7 +423,7 @@ async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, t
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -440,7 +431,7 @@ async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, t
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -469,7 +460,7 @@ async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -477,7 +468,7 @@ async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -505,7 +496,7 @@ async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -513,7 +504,7 @@ async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Exporting data is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -541,7 +532,7 @@ async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TY
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -549,7 +540,7 @@ async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking deployers is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -587,7 +578,7 @@ async def handle_track_top_wallets(update: Update, context: ContextTypes.DEFAULT
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -595,7 +586,7 @@ async def handle_track_top_wallets(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking top wallets is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -649,7 +640,7 @@ async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -657,7 +648,7 @@ async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking high net worth wallets is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -674,12 +665,7 @@ async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT
             "❌ Could not find high net worth wallets to track at this time."
         )
         return
-    
-    # Create tracking subscriptions for HNW wallets
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    from data.database import save_tracking_subscription
-    
+        
     for wallet in hnw_wallets:
         subscription = TrackingSubscription(
             user_id=user.user_id,
@@ -905,7 +891,7 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -913,7 +899,7 @@ async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Top Holders Analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -975,7 +961,7 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -983,7 +969,7 @@ async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_ad
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Deployer Wallet Analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1043,7 +1029,7 @@ async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE,
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1051,7 +1037,7 @@ async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE,
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Token tracking is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1094,7 +1080,7 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1102,7 +1088,7 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Wallet tracking is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1213,7 +1199,7 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1221,7 +1207,7 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Top Holders & Whales analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1245,7 +1231,7 @@ async def handle_profitable_wallets(update: Update, context: ContextTypes.DEFAUL
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1253,7 +1239,7 @@ async def handle_profitable_wallets(update: Update, context: ContextTypes.DEFAUL
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Profitable Wallets analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1280,7 +1266,7 @@ async def handle_high_net_worth(update: Update, context: ContextTypes.DEFAULT_TY
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1288,7 +1274,7 @@ async def handle_high_net_worth(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text(
             "⭐ <b>Premium Feature<b>\n\n"
             "High Net Worth Wallets analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1313,7 +1299,7 @@ async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAU
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1321,7 +1307,7 @@ async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAU
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking wallet trades is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1345,7 +1331,7 @@ async def handle_track_wallet_deployments(update: Update, context: ContextTypes.
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1353,7 +1339,7 @@ async def handle_track_wallet_deployments(update: Update, context: ContextTypes.
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking wallet deployments is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1377,7 +1363,7 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1385,7 +1371,7 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Deployer wallet scanning is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1409,7 +1395,7 @@ async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1417,7 +1403,7 @@ async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking whale and dev sales is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1730,9 +1716,9 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         f"🔹 <b>Profitable Token Deployers:</b> Check the most profitable token deployer wallets.\n"
         f"🔹 <b>KOL Wallets Profitability:</b> Track Key Opinion Leader (KOL) wallets and their PNL.\n\n"
         f"<b>⚙️ Other Options:</b>\n"
-        f"🔹 <b>Upgrade to Premium:</b> Unlock unlimited scans and premium features.\n"
+        f"🔹 <b>💎 Upgrade to Premium:</b> Unlock unlimited scans and premium features.\n"
         f"🔹 <b>Show Help:</b> Display this help menu anytime.\n"
-        f"🔑 <b>Upgrade to Premium for unlimited scans and advanced tracking!</b>\n\n"
+        f"🔑 <b>💎 Upgrade to Premium for unlimited scans and advanced tracking!</b>\n\n"
         f"Happy Trading! 🚀💰"
     )
     
@@ -1743,7 +1729,7 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
              InlineKeyboardButton("🐳 Whale & Deployer Tracking", callback_data="whale_tracking"),
         ],
         [
-            InlineKeyboardButton("🌟 Upgrade to Premium", callback_data="premium_info")
+            InlineKeyboardButton("💎  Upgrade to Premium", callback_data="premium_info")
         ],
         [
             InlineKeyboardButton("❓ Help", callback_data="general_help"),
@@ -1771,7 +1757,6 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Handle premium info callback"""
     query = update.callback_query
     
-    # Check if user is already premium
     user = await check_callback_user(update)
     
     if user.is_premium:
@@ -1786,94 +1771,6 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return
     
-    # Show premium benefits and pricing
-    premium_text = (
-        "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
-
-        "<b>🚀 Why Go Premium?</b>\n"
-        "Gain **unlimited access** to powerful tools that help you track tokens, analyze wallets, "
-        "and monitor whales like a pro. With DeFi-Scope Premium, you'll stay ahead of the market and "
-        "make **smarter investment decisions.**\n\n"
-
-        "<b>🔥 Premium Benefits:</b>\n"
-        "✅ <b>Unlimited Token & Wallet Scans:</b> Analyze as many tokens and wallets as you want, with no daily limits.\n"
-        "✅ <b>Deployer Wallet Analysis:</b> Find the deployer of any token, check their past projects, "
-        "and spot potential scams before investing.\n"
-        "✅ <b>Track Token, Wallet & Deployer Movements:</b> Get real-time alerts when a wallet buys, sells, "
-        "or deploys a new token.\n"
-        "✅ <b>View Top Holders of Any Token:</b> Discover which whales and big investors are holding a token, "
-        "and track their transactions.\n"
-        "✅ <b>Profitable Wallets Database:</b> Get exclusive access to a database of wallets that consistently "
-        "make profits in the DeFi market.\n"
-        "✅ <b>High Net Worth Wallet Monitoring:</b> Find wallets with **$10,000+ holdings** and see how they invest.\n"
-        "✅ <b>Priority Support:</b> Get faster responses and priority assistance from our support team.\n\n"
-
-        "<b>💰 Premium Pricing Plans:</b>\n"
-        "📅 <b>Monthly:</b> $19.99/month\n"
-        "📅 <b>Quarterly:</b> $49.99 ($16.66/month)\n"
-        "📅 <b>Annual:</b> $149.99 ($12.50/month) – Best Value! 🎉\n\n"
-
-        "🔹 <b>Upgrade now</b> to unlock the full power of DeFi-Scope and take control of your investments!\n"
-        "Select a plan below to get started:"
-    )
-    
-    keyboard = [
-        [
-            InlineKeyboardButton("Weekly - Pay with ETH", callback_data="premium_plan_weekly_eth"),
-            InlineKeyboardButton("Weekly - Pay with BNB", callback_data="premium_plan_weekly_bnb")
-        ],
-        [
-            InlineKeyboardButton("Monthly - Pay with ETH", callback_data="premium_plan_monthly_eth"),
-            InlineKeyboardButton("Monthly - Pay with BNB", callback_data="premium_plan_monthly_bnb")
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="back")
-        ],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    try:
-        # Try to edit the current message
-        await query.edit_message_text(
-            premium_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-    )
-    except Exception as e:
-        logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
-        await query.message.reply_text(
-            premium_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        # Delete the original message if possible
-        try:
-            await query.message.delete()
-        except:
-            pass
-
-async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle premium info callback"""
-    query = update.callback_query
-    
-    # Check if user is already premium
-    user = await check_callback_user(update)
-    
-    if user.is_premium:
-        premium_until = user.premium_until.strftime("%d %B %Y") if user.premium_until else "Unknown"
-        
-        await query.edit_message_text(
-            f"✨ <b>You're Already a Premium User!</b>\n\n"
-            f"Thank you for supporting DeFi-Scope Bot.\n\n"
-            f"Your premium subscription is active until: <b>{premium_until}</b>\n\n"
-            f"Enjoy all the premium features!",
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Show premium benefits and pricing
     premium_text = (
         "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
 
@@ -1909,21 +1806,21 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     keyboard = [
         [
-            InlineKeyboardButton("Weekly - Pay with ETH", callback_data="premium_plan_weekly_eth"),
-            InlineKeyboardButton("Weekly - Pay with BNB", callback_data="premium_plan_weekly_bnb")
+            InlineKeyboardButton("🟢 Weekly - 🦄 0.1 ETH", callback_data="premium_plan_weekly_eth"),
+            InlineKeyboardButton("🟢 Weekly - 🟡 0.35 BNB", callback_data="premium_plan_weekly_bnb")
         ],
         [
-            InlineKeyboardButton("Monthly - Pay with ETH", callback_data="premium_plan_monthly_eth"),
-            InlineKeyboardButton("Monthly - Pay with BNB", callback_data="premium_plan_monthly_bnb")
+            InlineKeyboardButton("📅 Monthly - 🦄 0.25 ETH", callback_data="premium_plan_monthly_eth"),
+            InlineKeyboardButton("📅 Monthly - 🟡 1.0 BNB", callback_data="premium_plan_monthly_bnb")
         ],
         [
             InlineKeyboardButton("🔙 Back", callback_data="back")
         ],
     ]
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             premium_text,
             reply_markup=reply_markup,
@@ -1931,45 +1828,46 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
     except Exception as e:
         logging.error(f"Error in handle_premium_info: {e}")
-        # If editing fails, send a new message
         await query.message.reply_text(
             premium_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
         try:
             await query.message.delete()
         except:
             pass
-
 async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE, plan: str, currency: str) -> None:
     """Handle premium purchase callback"""
     query = update.callback_query
     user = await check_callback_user(update)
     
-    # Get payment details for the selected plan and currency
-    from data.database import get_plan_details, get_plan_payment_details
-    
-    plan_details = get_plan_details(plan, currency)
+    # Get all payment details from a single function call
     payment_details = get_plan_payment_details(plan, currency)
     
-    # Get wallet address and amount
+    # Extract needed values from payment details
     wallet_address = payment_details["wallet_address"]
     crypto_amount = payment_details["amount"]
-    network_name = "Ethereum" if currency.lower() == "eth" else "Binance Smart Chain"
+    duration_days = payment_details["duration_days"]
+    display_name = payment_details["display_name"]
+    display_price = payment_details["display_price"]
+    network = payment_details["network"]
+    currency_code = payment_details["currency"]
+    
+    # Determine network name for display
+    network_name = "Ethereum" if network.lower() == "eth" else "Binance Smart Chain"
     
     # Show payment instructions with QR code
     payment_text = (
-        f"🛒 <b>{plan_details['display_name']} Premium Plan</b>\n\n"
-        f"Price: {plan_details['display_price']}\n"
-        f"Duration: {payment_details['duration_days']} days\n\n"
+        f"🛒 <b>{display_name} Premium Plan</b>\n\n"
+        f"Price: {display_price}\n"
+        f"Duration: {duration_days} days\n\n"
         f"<b>Payment Instructions:</b>\n\n"
-        f"1. Send <b>exactly {crypto_amount} {currency.upper()}</b> to our wallet address:\n"
+        f"1. Send <b>exactly {crypto_amount} {currency_code}</b> to our wallet address:\n"
         f"`{wallet_address}`\n\n"
         f"2. After sending, click 'I've Made Payment' and provide your transaction ID/hash.\n\n"
         f"<b>Important:</b>\n"
-        f"• Send only {currency.upper()} on the {network_name} network\n"
+        f"• Send only {currency_code} on the {network_name} network\n"
         f"• Other tokens or networks will not be detected\n"
         f"• Transaction must be confirmed on the blockchain to activate premium"
     )
@@ -2007,7 +1905,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
             )
             
             # Format QR data based on currency
-            if currency.lower() == "eth":
+            if network.lower() == "eth":
                 qr_data = f"ethereum:{wallet_address}?value={crypto_amount}"
             else:
                 qr_data = f"binance:{wallet_address}?value={crypto_amount}"
@@ -2026,7 +1924,7 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
             await context.bot.send_photo(
                 chat_id=update.effective_chat.id,
                 photo=bio,
-                caption=f"Scan this QR code to pay {crypto_amount} {currency.upper()} to our wallet"
+                caption=f"Scan this QR code to pay {crypto_amount} {currency_code} to our wallet"
             )
         except ImportError:
             # QR code library not available, skip sending QR code
@@ -2085,7 +1983,6 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             return
         
         # 2. Get payment details based on the plan and currency
-        from data.database import get_plan_payment_details
         payment_details = get_plan_payment_details(plan, currency)
         
         expected_amount = payment_details["amount"]
@@ -2192,7 +2089,7 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             # Create keyboard with options
             keyboard = [
                 [InlineKeyboardButton("Try Again", callback_data=f"payment_retry_{plan}_{currency}")],
-                [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")],
+                [InlineKeyboardButton("Contact Support", url="https://t.me/SeniorCrypto01")],
                 [InlineKeyboardButton("🔙 Back", callback_data="premium_info")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2215,7 +2112,7 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Create keyboard with options
         keyboard = [
             [InlineKeyboardButton("Try Again", callback_data=f"premium_plan_{plan}_{currency}")],
-            [InlineKeyboardButton("Contact Support", url="https://t.me/AdminSupport")],
+            [InlineKeyboardButton("Contact Support", url="https://t.me/SeniorCrypto01")],
             [InlineKeyboardButton("🔙 Back", callback_data="premium_info")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2253,7 +2150,6 @@ async def handle_payment_retry(update: Update, context: ContextTypes.DEFAULT_TYP
         parse_mode=ParseMode.HTML
     )
 
-# Add a handler for transaction ID input
 async def handle_transaction_id_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle transaction ID input from user"""
     # Check if we're awaiting a transaction ID
@@ -2308,53 +2204,6 @@ async def handle_transaction_id_input(update: Update, context: ContextTypes.DEFA
     await confirmation_message.edit_text(
         f"✅ Transaction ID received: `{transaction_id[:8]}...{transaction_id[-6:]}`\n\n"
         f"Click the button below to verify your payment on the {currency.upper()} blockchain.",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.HTML
-    )
-
-# Helper function to send a welcome message to new premium users
-async def send_premium_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, plan: str, premium_until: datetime) -> None:
-    """Send a welcome message with premium tips to new premium users"""
-    welcome_message = (
-        f"🎉 <b>Welcome to DeFi-Scope Premium!</b>\n\n"
-        f"Hi {user.first_name}, thank you for upgrading to our premium service.\n\n"
-        f"<b>Here are some premium features you can now access:</b>\n\n"
-        f"• <b>Unlimited Token & Wallet Scans</b>\n"
-        f"  Use /scan_token and /scan_wallet as much as you need\n\n"
-        f"• <b>Deployer Wallet Analysis</b>\n"
-        f"  Use /dw [contract] to analyze token deployers\n\n"
-        f"• <b>Top Holders & Whale Tracking</b>\n"
-        f"  Use /th [contract] to see top token holders\n\n"
-        f"• <b>Wallet & Token Tracking</b>\n"
-        f"  Use /track commands to monitor wallets and tokens\n\n"
-        f"Need help with premium features? Type /premium_help anytime!\n\n"
-        f"Your {plan} subscription is active until: <b>{premium_until.strftime('%d %B %Y')}</b>"
-    )
-    
-    # Send as a new message to avoid replacing the payment confirmation
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=welcome_message,
-        parse_mode=ParseMode.HTML
-    )
-    """Handle payment retry callback"""
-    query = update.callback_query
-    
-    # Clear the stored transaction ID
-    if "transaction_id" in context.user_data:
-        del context.user_data["transaction_id"]
-    
-    # Set up to collect a new transaction ID
-    context.user_data["awaiting_transaction_id"] = True
-    context.user_data["premium_plan"] = plan
-    
-    keyboard = [[InlineKeyboardButton("🔙 Cancel", callback_data="back")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(
-        "📝 <b>New Transaction ID Required</b>\n\n"
-        "Please send the new transaction hash/ID of your payment.\n\n"
-        "You can find this in your wallet's transaction history after sending the payment.",
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )

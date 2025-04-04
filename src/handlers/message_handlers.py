@@ -7,9 +7,9 @@ from telegram.constants import ParseMode
 
 from config import FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY
 from data.database import get_token_data, get_wallet_data
-from src.services.blockchain import is_valid_address, get_first_buyers, get_token_holders
-from src.services.user_management import get_or_create_user, check_rate_limit_service
-from src.handlers.callback_handlers import handle_start_menu, handle_payment_made, handle_expected_input
+from services.blockchain import is_valid_address, get_first_buyers, get_token_holders
+from services.user_management import get_or_create_user, check_rate_limit_service
+from handlers.callback_handlers import handle_start_menu, handle_payment_made, handle_expected_input
 
 async def handle_transaction_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     """
@@ -73,7 +73,7 @@ async def handle_transaction_id(update: Update, context: ContextTypes.DEFAULT_TY
             )
             return True
     
-    return False  # Not handling a transaction ID
+    return False
 
 async def handle_auto_detect_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
@@ -243,7 +243,7 @@ async def handle_command_scan_token(update: Update, context: ContextTypes.DEFAUL
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -320,7 +320,7 @@ async def handle_command_scan_wallet(update: Update, context: ContextTypes.DEFAU
     
     if has_reached_limit and not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -399,18 +399,18 @@ async def handle_command_premium_help(update: Update, context: ContextTypes.DEFA
             f"Thank you for being a premium user! Your subscription is active until: <b>{premium_until}</b>\n\n"
             f"<b>Here's what you can do with your premium access:</b>\n\n"
             f"<b>🔍 Advanced Token Analysis:</b>\n"
-            f"• /dw [contract] - Analyze deployer wallet history and risk\n"
-            f"• /th [contract] - View top holders and whale concentration\n\n"
+            f"• Analyze deployer wallet history and risk\n"
+            f"• View top holders and whale concentration\n\n"
             f"<b>👛 Wallet Tracking:</b>\n"
-            f"• /track [contract] - Monitor token for whale movements\n"
-            f"• /track wd [wallet] - Track wallet for new token deployments\n"
-            f"• /track wbs [wallet] - Track wallet buys & sells\n\n"
+            f"• Monitor token for whale movements\n"
+            f"• Track wallet for new token deployments\n"
+            f"• Track wallet buys & sells\n\n"
             f"<b>💰 Profitability Analysis:</b>\n"
-            f"• /pw [trades] [buy amount] [days] [contract] - Find profitable wallets\n"
-            f"• /hnw [contract] - Find high net worth wallets\n\n"
+            f"• Find profitable wallets\n"
+            f"• Find high net worth wallets\n\n"
             f"<b>📊 Data Export:</b>\n"
             f"• Use the 'Export' buttons to download detailed data\n\n"
-            f"<b>Need more help?</b> Contact our support at @AdminSupport"
+            f"<b>Need more help?</b> Contact our support at @SeniorCrypto01"
         )
         
         keyboard = [[InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]]
@@ -472,7 +472,7 @@ async def handle_command_track(update: Update, context: ContextTypes.DEFAULT_TYP
     # Check if user is premium
     if not user.is_premium:
         keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
             [InlineKeyboardButton("🔙 Back", callback_data="back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -480,7 +480,7 @@ async def handle_command_track(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💎 Upgrade to premium to unlock all features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -697,5 +697,3 @@ async def handle_command_my_tracking(update: Update, context: ContextTypes.DEFAU
         response,
         parse_mode=ParseMode.HTML
     )
-
-    

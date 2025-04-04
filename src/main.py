@@ -29,7 +29,7 @@ def main():
         logging.error("❌ Could not connect to MongoDB. Please check your configuration.")
         sys.exit(1)
     
-    logging.info("🚀 Starting DeFi-Scope Telegram Bot...")
+    logging.info("🚀 Starting DeFi-Scope Telegram Bot... 💎")
     
     app = create_bot()
     app.run_polling()

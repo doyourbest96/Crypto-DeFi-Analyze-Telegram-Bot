@@ -7,8 +7,9 @@ from pymongo.collection import Collection
 
 from config import MONGODB_URI, DB_NAME, SUBSCRIPTION_WALLET_ADDRESS
 from data.models import User, UserScan, TokenData, WalletData, TrackingSubscription, KOLWallet
+from utils import get_plan_details
+from services.payment import get_plan_payment_details
 
-# Global database connection
 _db: Optional[Database] = None
 
 def init_database() -> bool:
@@ -66,7 +67,6 @@ def get_database() -> Database:
         init_database()
     return _db
 
-# User operations
 def get_user(user_id: int) -> Optional[User]:
     """Get a user by ID"""
     db = get_database()
@@ -105,7 +105,6 @@ def set_premium_status(user_id: int, is_premium: bool, duration_days: int = 30) 
         }}
     )
 
-# User scan tracking operations
 def get_user_scan_count(user_id: int, scan_type: str, date: str) -> int:
     """Get the number of scans a user has performed of a specific type on a date"""
     db = get_database()
@@ -136,7 +135,6 @@ def reset_user_scan_counts() -> None:
     # Delete all scan records except today's
     db.user_scans.delete_many({"date": {"$ne": today}})
 
-# Token data operations
 def get_token_data(address: str) -> Optional[TokenData]:
     """Get token data by address"""
     db = get_database()
@@ -164,7 +162,6 @@ def get_tokens_by_deployer(deployer_address: str) -> List[TokenData]:
     tokens = db.token_data.find({"deployer": deployer_address.lower()})
     return [TokenData.from_dict(token) for token in tokens]
 
-# Wallet data operations
 def get_wallet_data(address: str) -> Optional[WalletData]:
     """Get wallet data by address"""
     db = get_database()
@@ -213,7 +210,6 @@ def get_profitable_deployers(days: int, limit: int = 10) -> List[Dict[str, Any]]
     
     return [WalletData.from_dict(wallet).to_dict() for wallet in wallets]
 
-# KOL wallet operations
 def get_kol_wallet(name_or_address: str) -> Optional[KOLWallet]:
     """Get a KOL wallet by name or address"""
     db = get_database()
@@ -247,7 +243,6 @@ def save_kol_wallet(kol: KOLWallet) -> None:
         upsert=True
     )
 
-# Tracking subscription operations
 def get_user_tracking_subscriptions(user_id: int) -> List[TrackingSubscription]:
     """Get all tracking subscriptions for a user"""
     db = get_database()
@@ -311,7 +306,6 @@ def update_subscription_check_time(subscription_id: str) -> None:
         {"$set": {"last_checked": datetime.now()}}
     )
 
-# Cleanup and maintenance functions
 def cleanup_expired_premium() -> None:
     """Remove premium status from users whose premium has expired"""
     db = get_database()
@@ -443,61 +437,6 @@ def record_referral(referrer_id: int, referred_id: int) -> None:
         {"$inc": {"referral_count": 1}}
     )
 
-def get_plan_details(plan: str, currency: str = "eth") -> Dict[str, Any]:
-    """Get details for a specific premium plan and currency"""
-    plans = {
-        "weekly": {
-            "eth": {
-                "amount": 0.1,
-                "duration_days": 7,
-                "display_name": "Weekly",
-                "display_price": "0.1 ETH"
-            },
-            "bnb": {
-                "amount": 0.35,
-                "duration_days": 7,
-                "display_name": "Weekly",
-                "display_price": "0.35 BNB"
-            }
-        },
-        "monthly": {
-            "eth": {
-                "amount": 0.25,
-                "duration_days": 30,
-                "display_name": "Monthly",
-                "display_price": "0.25 ETH"
-            },
-            "bnb": {
-                "amount": 1.0,
-                "duration_days": 30,
-                "display_name": "Monthly",
-                "display_price": "1.0 BNB"
-            }
-        }
-    }
-    
-    return plans.get(plan, {}).get(currency, plans["monthly"]["eth"])
-
-def get_plan_payment_details(plan: str, currency: str = "eth") -> Dict[str, Any]:
-    """Get payment details for a specific premium plan"""
-    
-    plan_details = get_plan_details(plan, currency)
-    
-    if currency.lower() == "bnb":
-        wallet_address = SUBSCRIPTION_WALLET_ADDRESS
-        network = "bnb"
-    else:
-        wallet_address = SUBSCRIPTION_WALLET_ADDRESS
-        network = "eth"
-    
-    return {
-        "amount": plan_details["amount"],
-        "duration_days": plan_details["duration_days"],
-        "wallet_address": wallet_address,
-        "network": network,
-        "currency": currency.upper()
-    }
-
 def update_user_premium_status(
     user_id: int,
     is_premium: bool,
@@ -534,16 +473,18 @@ def update_user_premium_status(
             }}
         )
         
-        # Get plan details
-        plan_details = get_plan_details(plan, payment_currency)
+        # Get payment details
+        payment_details = get_plan_payment_details(plan, payment_currency)
         
         # Record the transaction
         db.transactions.insert_one({
             "user_id": user_id,
             "type": "premium_purchase",
             "plan_type": plan,
-            "currency": payment_currency.upper(),
-            "amount": plan_details["amount"],
+            "currency": payment_details["currency"],  # Already uppercase from get_plan_payment_details
+            "amount": payment_details["amount"],
+            "duration_days": payment_details["duration_days"],
+            "network": payment_details["network"],
             "transaction_id": transaction_id,
             "date": datetime.now()
         })

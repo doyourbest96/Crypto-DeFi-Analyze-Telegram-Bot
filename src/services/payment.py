@@ -2,7 +2,7 @@ import logging
 import aiohttp
 from web3 import Web3
 from typing import Dict, Any, Tuple
-from config import ETHERSCAN_API_KEY, WEB3_PROVIDER_URI, BSCSCAN_API_KEY
+from config import ETHERSCAN_API_KEY, WEB3_PROVIDER_URI, BSCSCAN_API_KEY, SUBSCRIPTION_WALLET_ADDRESS
 
 async def verify_crypto_payment(
     transaction_id: str, 
@@ -142,36 +142,22 @@ async def verify_crypto_payment(
         logging.error(f"Error verifying crypto payment: {e}")
         return {"verified": False, "error": str(e)}
 
-def get_payment_details_for_plan(plan: str, payment_currency: str = "eth") -> Dict[str, Any]:
-    """
-    Get payment details for a specific premium plan
-    
-    Args:
-        plan: The premium plan (weekly or monthly)
-        payment_currency: The payment currency (eth or bnb)
-        
-    Returns:
-        Dict with payment details
-    """
-    # ETH wallet address
-    eth_wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"
-    
-    # BNB wallet address (can be the same as ETH if using a multi-chain wallet)
-    bnb_wallet_address = "0xabcdef1234567890abcdef1234567890abcdef12"
-    
-    # Define plan details with direct crypto amounts
+def get_plan_payment_details(plan: str, currency: str = "eth") -> Dict[str, Any]:
+    """Get complete payment details for a specific premium plan and currency"""
     plans = {
         "weekly": {
             "eth": {
                 "amount": 0.1,
                 "duration_days": 7,
-                "wallet_address": eth_wallet_address,
+                "display_name": "Weekly",
+                "display_price": "0.1 ETH",
                 "network": "eth"
             },
             "bnb": {
                 "amount": 0.35,
                 "duration_days": 7,
-                "wallet_address": bnb_wallet_address,
+                "display_name": "Weekly",
+                "display_price": "0.35 BNB",
                 "network": "bnb"
             }
         },
@@ -179,17 +165,25 @@ def get_payment_details_for_plan(plan: str, payment_currency: str = "eth") -> Di
             "eth": {
                 "amount": 0.25,
                 "duration_days": 30,
-                "wallet_address": eth_wallet_address,
+                "display_name": "Monthly",
+                "display_price": "0.25 ETH",
                 "network": "eth"
             },
             "bnb": {
                 "amount": 1.0,
                 "duration_days": 30,
-                "wallet_address": bnb_wallet_address,
+                "display_name": "Monthly",
+                "display_price": "1.0 BNB",
                 "network": "bnb"
             }
         }
     }
     
-    # Return the plan details for the specified plan and currency
-    return plans.get(plan, {}).get(payment_currency, plans["monthly"]["eth"])
+    # Get the plan details or default to monthly ETH
+    plan_details = plans.get(plan, {}).get(currency.lower(), plans["monthly"]["eth"]).copy()
+    
+    # Add wallet address and uppercase currency
+    plan_details["wallet_address"] = SUBSCRIPTION_WALLET_ADDRESS
+    plan_details["currency"] = currency.upper()
+    
+    return plan_details
