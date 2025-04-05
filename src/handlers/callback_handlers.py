@@ -12,7 +12,7 @@ from data.database import (
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
 )
 from data.models import User, TrackingSubscription
-from data.database import get_plan_payment_details, save_tracking_subscription
+from data.database import *
 
 from services.blockchain import *
 from services.analytics import *
@@ -20,7 +20,7 @@ from services.notification import *
 from services.user_management import *
 from services.payment import *
 
-from utils import send_premium_welcome_message, check_callback_user
+from utils import *
 
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle all callback queries from inline keyboards"""
@@ -623,296 +623,33 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
     del context.user_data["expecting"]
 
     if expecting == "first_buyers_token_address":
-        # User sent a token address after clicking "First Buyers"
-        token_address = update.message.text.strip()
-        print(f"Token address received: {token_address}")
-        
-        # Validate address
-        if not await is_valid_address(token_address):
-            # Add back button to validation error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(
-                "⚠️ Please provide a valid Ethereum address or token contract address.",
-                reply_markup=reply_markup
-            )
-            return
-        
-        # Send processing message
-        processing_message = await update.message.reply_text(
-            "🔍 Analyzing token's first buyers... This may take a moment."
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="first_buyers",
+            get_data_func=get_token_first_buyers,
+            format_response_func=format_first_buyers_response,
+            scan_count_type="token_scan",
+            processing_message_text="🔍 Analyzing token's first buyers... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the token's first buyers. Please try again later.",
+            no_data_message_text="❌ Could not find first buyers data for this token."
         )
         
-        try:
-            # Get first buyers data (placeholder - implement actual blockchain query)
-            first_buyers = "asdfasdfaklsdnfalkdsnflka"
-            token_data = "await get_token_data(token_address)"
-            
-            if not first_buyers or not token_data:
-                # Add back button when no data is found
-                keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await processing_message.edit_text(
-                    "❌ Could not find first buyers data for this token.",
-                    reply_markup=reply_markup
-                )
-                return
-            
-            # Format the response
-            # response = (
-            #     f"🛒 <b>First Buyers Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
-            #     f"Contract: `{token_address}`\n\n"
-            # )
-            
-            # for i, buyer in enumerate(first_buyers[:10], 1):
-            #     response += (
-            #         f"{i}. `{buyer['address'][:6]}...{buyer['address'][-4:]}`\n"
-            #         f"   Buy Amount: {buyer.get('buy_amount', 'N/A')} tokens\n"
-            #         f"   Buy Value: ${buyer.get('buy_value', 'N/A')}\n"
-            #         f"   Current PNL: {buyer.get('pnl', 'N/A')}%\n\n"
-            #     )
-            response = f"Congratulations, you have successfully scanned the token \n\n"
-            
-            # Add buttons for further analysis
-            keyboard = [
-                [
-                    InlineKeyboardButton("Export Data", callback_data=f"export_fb_{token_address}"),
-                    InlineKeyboardButton("Track Token", callback_data=f"track_token_{token_address}")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            success = False
-            try:
-                # Try to edit the current message
-                await processing_message.edit_text(
-                    response,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.HTML
-                )
-                success = True
-            except Exception as e:
-                logging.error(f"Error in handle_first_buyers_token_address: {e}")
-                # If editing fails, send a new message
-                await update.message.reply_text(
-                    response,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.HTML
-                )
-                try:
-                    await processing_message.delete()
-                except:
-                    pass
-            
-            # Only increment scan count if we successfully displayed data
-            if success:
-                # Instead of using check_callback_user which expects a callback query
-                # Get the user directly from the message update
-                user_id = update.effective_user.id
-                # Or if you need the full User object:
-
-                user = get_user(user_id)
-                if not user:
-                    # Create user if not exists
-                    user = User(user_id=user_id, username=update.effective_user.username)
-                    # Save user to database if needed
-                
-                await increment_scan_count(user_id, "most_profitable_wallet_scan")
-        
-        except Exception as e:
-            logging.error(f"Error in handle_expected_input (first_buyers_token_address): {e}")
-            
-            # Add back button to exception error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await processing_message.edit_text(
-                "❌ An error occurred while analyzing the token's first buyers. Please try again later.",
-                reply_markup=reply_markup
-            )
-
-    elif expecting == "token_address":
-        # User sent a token address after clicking "Scan Token"
-        token_address = update.message.text.strip()
-       
-        # Validate address
-        if not is_valid_address(token_address):
-            # Add back button to validation error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(
-                "⚠️ Please provide a valid Ethereum address or token contract address.",
-                reply_markup=reply_markup
-            )
-            return
-       
-        # Send processing message
-        processing_message = await update.message.reply_text(
-            "🔍 Analyzing token... This may take a moment."
+    elif expecting == "token_most_profitable_wallet_scan":
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="most_profitable_wallets",
+            get_data_func=get_token_profitable_wallets,
+            format_response_func=format_profitable_wallets_response,
+            scan_count_type="token_most_profitable_wallet_scan",
+            processing_message_text="🔍 Analyzing most profitable wallets for this token... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the token's most profitable wallets. Please try again later.",
+            no_data_message_text="❌ Could not find profitable wallets data for this token."
         )
-       
-        try:
-            # Get token info (placeholder - implement actual blockchain query)
-            token_data = await get_token_data(token_address)
-           
-            if not token_data:
-                # Add back button when no token data is found
-                keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await processing_message.edit_text(
-                    "❌ Could not find data for this token.",
-                    reply_markup=reply_markup
-                )
-                return
-           
-            # Format the response
-            response = (
-                f"📊 <b>Token Analysis: {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
-                f"Contract: `{token_address}`\n\n"
-                f"Current Price: ${token_data.get('current_price', 'N/A')}\n"
-                f"Market Cap: ${token_data.get('current_market_cap', 'N/A')}\n"
-                f"Holders: {token_data.get('holders_count', 'N/A')}\n"
-                f"Liquidity: ${token_data.get('liquidity', 'N/A')}\n\n"
-                f"Launch Date: {token_data.get('launch_date', 'N/A')}\n"
-                f"ATH: ${token_data.get('ath_price', 'N/A')}\n"
-                f"ATH Date: {token_data.get('ath_date', 'N/A')}\n"
-            )
-           
-            # Add buttons for further analysis
-            keyboard = [
-                [
-                    InlineKeyboardButton("First Buyers", callback_data=f"more_buyers_{token_address}"),
-                    InlineKeyboardButton("Top Holders", callback_data=f"th_{token_address}")
-                ],
-                [
-                    InlineKeyboardButton("Deployer Analysis", callback_data=f"dw_{token_address}"),
-                    InlineKeyboardButton("Track Token", callback_data=f"track_token_{token_address}")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="back")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-           
-            await processing_message.edit_text(
-                response,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.HTML
-            )
-            try:
-                # Try to edit the current message
-                await processing_message.edit_message_text(
-                    response,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.HTML
-            )
-            except Exception as e:
-                logging.error(f"Error in handle_back: {e}")
-                # If editing fails, send a new message
-                await processing_message.message.reply_text(
-                    response,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.HTML
-                )
-            # Delete the original message if possible
-            try:
-                await processing_message.message.delete()
-            except:
-                pass
-       
-        except Exception as e:
-            logging.error(f"Error in handle_expected_input (token_address): {e}")
-            
-            # Add back button to exception error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await processing_message.edit_text(
-                "❌ An error occurred while analyzing the token. Please try again later.",
-                reply_markup=reply_markup
-            )
-   
-    elif expecting == "wallet_address":
-        # User sent a wallet address after clicking "Scan Wallet"
-        wallet_address = update.message.text.strip()
-       
-        # Validate address
-        if not is_valid_address(wallet_address):
-            # Add back button to validation error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(
-                "⚠️ Please provide a valid Ethereum wallet address.",
-                reply_markup=reply_markup
-            )
-            return
-       
-        # Send processing message
-        processing_message = await update.message.reply_text(
-            "🔍 Analyzing wallet... This may take a moment."
-        )
-       
-        try:
-            # Get wallet info (placeholder - implement actual blockchain query)
-            wallet_data = await get_wallet_data(wallet_address)
-           
-            if not wallet_data:
-                # Add back button when no wallet data is found
-                keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await processing_message.edit_text(
-                    "❌ Could not find data for this wallet.",
-                    reply_markup=reply_markup
-                )
-                return
-           
-            # Format the response
-            response = (
-                f"👛 <b>Wallet Analysis</b>\n\n"
-                f"Address: `{wallet_address}`\n\n"
-                f"Balance: {wallet_data.get('balance', 'N/A')}\n"
-                f"First Transaction: {wallet_data.get('first_transaction', 'N/A')}\n"
-                f"Total Transactions: {wallet_data.get('total_transactions', 'N/A')}\n\n"
-                f"Tokens Deployed: {len(wallet_data.get('deployed_tokens', []))}\n"
-                f"Trading Performance: {wallet_data.get('win_rate', 'N/A')}% win rate\n"
-            )
-           
-            # Add buttons for further analysis
-            keyboard = [
-                [
-                    InlineKeyboardButton("Tokens Deployed", callback_data=f"td_{wallet_address}"),
-                    InlineKeyboardButton("Trading History", callback_data=f"trading_history_{wallet_address}")
-                ],
-                [
-                    InlineKeyboardButton("Track Wallet", callback_data=f"track_wallet_{wallet_address}")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="back")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-           
-            await processing_message.edit_text(
-                response,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.HTML
-            )
-       
-        except Exception as e:
-            logging.error(f"Error in handle_expected_input (wallet_address): {e}")
-            
-            # Add back button to exception error message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await processing_message.edit_text(
-                "❌ An error occurred while analyzing the wallet. Please try again later.",
-                reply_markup=reply_markup
-            )
-
+    
+    # Handle other expecting states...
+    #      
 async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
     """Handle top holders callback"""
     query = update.callback_query
