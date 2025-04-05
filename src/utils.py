@@ -41,34 +41,6 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
     
     return False
 
-async def check_rate_limit(update: Update, scan_type: str, limit: int) -> bool:
-    """Check if user has exceeded their daily scan limit"""
-    user = await check_callback_user(update)
-    user_id = user.user_id
-    
-    # Use the service function to check rate limit
-    has_reached_limit, current_count = await check_rate_limit_service(user_id, scan_type, limit)
-    
-    if has_reached_limit:
-        keyboard = [
-            [InlineKeyboardButton("Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {limit} daily {scan_type} scans.\n\n"
-            f"Premium users enjoy unlimited scans!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        return True
-    
-    # Increment scan count using the service function
-    await increment_scan_count(user_id, scan_type)
-    return 
-
 async def send_premium_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, plan: str, premium_until: datetime) -> None:
     """Send a welcome message with premium tips to new premium users"""
     welcome_message = (
