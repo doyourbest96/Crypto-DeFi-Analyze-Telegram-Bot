@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT, SUBSCRIPTION_WALLET_ADDRESS
+from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_ATH_SCANS_DAILY, FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT, SUBSCRIPTION_WALLET_ADDRESS
 from data.database import (
     get_token_data, get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
@@ -648,8 +648,22 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             no_data_message_text="❌ Could not find profitable wallets data for this token."
         )
     
+    elif expecting == "ath_token_address":
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="ath",
+            get_data_func=get_ath_data,
+            format_response_func=format_ath_response,
+            scan_count_type="token_scan",
+            processing_message_text="🔍 Analyzing token's ATH data... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the token's ATH data. Please try again later.",
+            no_data_message_text="❌ Could not find ATH data for this token."
+        )
+    
     # Handle other expecting states...
     #      
+
 async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
     """Handle top holders callback"""
     query = update.callback_query
@@ -1701,15 +1715,43 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
 async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle ATH button callback"""
     query = update.callback_query
+    user = await check_callback_user(update)
     
-    # Prompt user to enter token address
+    # Check if user has reached daily limit
+    has_reached_limit, current_count = await check_rate_limit_service(
+        user.user_id, "ath_scan", FREE_ATH_SCANS_DAILY
+    )
+    
+    if has_reached_limit and not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
+            f"You've used {current_count} out of {FREE_ATH_SCANS_DAILY} daily token scans.\n\n"
+            f"Premium users enjoy unlimited scans! 💎<b>Upgrade to Premium</b> for more features.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Prompt user to enter token address with back button
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await query.edit_message_text(
         "Please send me the token contract address to check its All-Time High (ATH).\n\n"
         "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.HTML
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN
     )
     
-    # Set conversation state to expect token address for ATH
+    # Set conversation state to expect token address for ATH analysis
     context.user_data["expecting"] = "ath_token_address"
 
 async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

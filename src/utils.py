@@ -290,10 +290,6 @@ def format_first_buyers_response(first_buyers: List[Dict[str, Any]],
         )
     
     keyboard = [
-        [
-            InlineKeyboardButton("Export Data", callback_data=f"export_fb_{token_address}"),
-            InlineKeyboardButton("Track Token", callback_data=f"track_token_{token_address}")
-        ],
         [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
     ]
     
@@ -328,11 +324,60 @@ def format_profitable_wallets_response(profitable_wallets: List[Dict[str, Any]],
         )
     
     keyboard = [
-        [
-            InlineKeyboardButton("Export Data", callback_data=f"export_mpw_{token_address}"),
-            InlineKeyboardButton("Track Token", callback_data=f"track_token_{token_address}")
-        ],
         [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
     ]
     
     return response, keyboard
+
+def format_ath_response(token_data: Dict[str, Any], token_data_again: Dict[str, Any], token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+    """
+    Format the response for ATH analysis
+    
+    Args:
+        token_data: Token information (first parameter from handle_token_analysis_input)
+        token_data_again: Same token information (second parameter from handle_token_analysis_input)
+        token_address: The token address
+        
+    Returns:
+        Tuple of (formatted response text, keyboard buttons)
+    """
+    # Note: token_data and token_data_again are the same in this case
+    # We're using this signature to match the expected format for handle_token_analysis_input
+    
+    # Calculate percentage from ATH
+    current_mc = token_data.get('current_market_cap', 0)
+    ath_mc = token_data.get('ath_market_cap', 0)
+    
+    if current_mc > 0 and ath_mc > 0:
+        percent_from_ath = round((current_mc / ath_mc) * 100, 2)
+    else:
+        percent_from_ath = "N/A"
+    
+    response = (
+        f"📈 <b>ATH Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        f"Contract: `{token_address}`\n\n"
+        f"<b>Current Status:</b>\n"
+        f"• Current Price: ${token_data.get('current_price', 'N/A')}\n"
+        f"• Current Market Cap: ${format_number(token_data.get('current_market_cap', 'N/A'))}\n"
+        f"• Holders: {format_number(token_data.get('holders_count', 'N/A'))}\n\n"
+        f"<b>All-Time High:</b>\n"
+        f"• ATH Price: ${token_data.get('ath_price', 'N/A')}\n"
+        f"• ATH Market Cap: ${format_number(token_data.get('ath_market_cap', 'N/A'))}\n"
+        f"• ATH Date: {token_data.get('ath_date', 'N/A')}\n"
+        f"• Current % of ATH: {percent_from_ath}%\n\n"
+        f"<b>Token Info:</b>\n"
+        f"• Launch Date: {token_data.get('launch_date', 'N/A')}\n"
+        f"• Liquidity: ${format_number(token_data.get('liquidity', 'N/A'))}"
+    )
+    
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    
+    return response, keyboard
+
+def format_number(num):
+    """Format a number with commas for thousands"""
+    if isinstance(num, (int, float)):
+        return f"{num:,}"
+    return num
