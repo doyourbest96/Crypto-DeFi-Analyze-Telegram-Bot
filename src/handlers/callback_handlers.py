@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_ATH_SCANS_DAILY, FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT, SUBSCRIPTION_WALLET_ADDRESS
+from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_ATH_SCANS_DAILY, FREE_WALLET_SCANS_DAILY
 from data.database import (
     get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
@@ -635,13 +635,13 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             analysis_type="first_buyers",
             get_data_func=get_token_first_buyers,
             format_response_func=format_first_buyers_response,
-            scan_count_type="token_scan",
+            scan_count_type="first_buy_wallet_scan",
             processing_message_text="🔍 Analyzing token's first buyers... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's first buyers. Please try again later.",
             no_data_message_text="❌ Could not find first buyers data for this token."
         )
         
-    elif expecting == "token_most_profitable_wallet_scan":
+    elif expecting == "token_most_profitable_wallets_token_address":
         await handle_token_analysis_input(
             update=update,
             context=context,
@@ -661,7 +661,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             analysis_type="ath",
             get_data_func=get_ath_data,
             format_response_func=format_ath_response,
-            scan_count_type="token_scan",
+            scan_count_type="ath_scan",
             processing_message_text="🔍 Analyzing token's ATH data... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's ATH data. Please try again later.",
             no_data_message_text="❌ Could not find ATH data for this token."
@@ -674,7 +674,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             analysis_type="deployer_wallet_scan",
             get_data_func=get_deployer_wallet_scan_data,
             format_response_func=format_deployer_wallet_scan_response,
-            scan_count_type="token_scan",
+            scan_count_type="deployer_wallet_scan",
             processing_message_text="🔍 Analyzing token deployer wallet... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the deployer wallet. Please try again later.",
             no_data_message_text="❌ Could not find deployer wallet data for this token."
@@ -687,7 +687,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             analysis_type="top_holders",
             get_data_func=get_token_top_holders,
             format_response_func=format_top_holders_response,
-            scan_count_type="token_scan",
+            scan_count_type="top_holders_scan",
             processing_message_text="🔍 Analyzing token's top holders... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's top holders. Please try again later.",
             no_data_message_text="❌ Could not find top holders data for this token."
@@ -700,465 +700,13 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             analysis_type="high_net_worth_holders",
             get_data_func=get_high_net_worth_holders,
             format_response_func=format_high_net_worth_holders_response,
-            scan_count_type="token_scan",
+            scan_count_type="high_net_worth_holders_scan",
             processing_message_text="🔍 Analyzing token's high net worth holders... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's high net worth holders. Please try again later.",
             no_data_message_text="❌ Could not find high net worth holders data for this token."
         )  
 
-async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
-    """Handle top holders callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Top Holders Analysis is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Analyzing token top holders... This may take a moment."
-    )
-    
-    try:
-        # Get token holders (placeholder - implement actual blockchain query)
-        holders = await get_token_holders(token_address)
-        token_data = await get_token_data(token_address)
-        
-        if not holders or not token_data:
-            await query.edit_message_text(
-                "❌ Could not find holder data for this token."
-            )
-            return
-        
-        # Format the response
-        response = (
-            f"👥 <b>Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
-        )
-        
-        for i, holder in enumerate(holders[:10], 1):
-            percentage = holder.get('percentage', 'N/A')
-            response += (
-                f"{i}. `{holder['address'][:6]}...{holder['address'][-4:]}`\n"
-                f"   Holdings: {holder.get('amount', 'N/A')} tokens ({percentage}%)\n"
-                f"   Value: ${holder.get('value', 'N/A')}\n\n"
-            )
-        
-        # Add button to export data
-        keyboard = [
-            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_th: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while analyzing top holders. Please try again later."
-        )
-
-async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
-    """Handle deployer wallet analysis callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Deployer Wallet Analysis is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Analyzing token deployer wallet... This may take a moment."
-    )
-    
-    try:
-        # Get token info (placeholder - implement actual blockchain query)
-        token_data = await get_token_data(token_address)
-        
-        if not token_data or not token_data.get('deployer_wallet'):
-            await query.edit_message_text(
-                "❌ Could not find deployer wallet data for this token."
-            )
-            return
-        
-        # Format the response
-        deployer = token_data.get('deployer_wallet', {})
-        response = (
-            f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
-            f"Deployer Wallet: `{deployer.get('address', 'Unknown')}`\n\n"
-            f"Tokens Deployed: {deployer.get('tokens_deployed', 'N/A')}\n"
-            f"Success Rate: {deployer.get('success_rate', 'N/A')}%\n"
-            f"Avg. ROI: {deployer.get('avg_roi', 'N/A')}%\n"
-            f"Rugpull History: {deployer.get('rugpull_count', 'N/A')} tokens\n\n"
-            f"Risk Assessment: {deployer.get('risk_level', 'Unknown')}"
-        )
-        
-        # Add button to track this deployer
-        keyboard = [
-            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_dw: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while analyzing deployer wallet. Please try again later."
-        )
-
-async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
-    """Handle track token callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Token tracking is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Create tracking subscription
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    
-    subscription = TrackingSubscription(
-        user_id=user.user_id,
-        tracking_type="token",
-        target_address=token_address,
-        is_active=True,
-        created_at=datetime.now()
-    )
-    
-    # Save subscription
-    from data.database import save_tracking_subscription
-    save_tracking_subscription(subscription)
-    
-    # Get token data for name
-    token_data = await get_token_data(token_address)
-    token_name = token_data.get('name', 'Unknown Token') if token_data else 'this token'
-    
-    # Confirm to user
-    await query.edit_message_text(
-        f"✅ Now tracking token: {token_name}\n\n"
-        f"Contract: `{token_address[:6]}...{token_address[-4:]}`\n\n"
-        f"You will receive notifications for significant price movements, "
-        f"whale transactions, and other important events.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle track wallet callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Wallet tracking is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Create tracking subscription
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    
-    subscription = TrackingSubscription(
-        user_id=user.user_id,
-        tracking_type="wallet",
-        target_address=wallet_address,
-        is_active=True,
-        created_at=datetime.now()
-    )
-    
-    # Save subscription
-    from data.database import save_tracking_subscription
-    save_tracking_subscription(subscription)
-    
-    # Confirm to user
-    await query.edit_message_text(
-        f"✅ Now tracking wallet: `{wallet_address[:6]}...{wallet_address[-4:]}`\n\n"
-        f"You will receive notifications when this wallet makes significant trades, "
-        f"deploys new tokens, or performs other notable actions.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-async def handle_trading_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle trading history callback"""
-    query = update.callback_query
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Retrieving trading history... This may take a moment."
-    )
-    
-    try:
-        # Simulate getting trading history
-        # In a real implementation, you would query blockchain data
-        trading_history = [
-            {
-                "token": f"Token {i}",
-                "action": "Buy" if i % 3 != 0 else "Sell",
-                "amount": f"{i * 1000}",
-                "value": f"${i * 100}",
-                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
-            } for i in range(1, 8)
-        ]
-        
-        if not trading_history:
-            await query.edit_message_text(
-                "❌ No trading history found for this wallet."
-            )
-            return
-        
-        # Format the response
-        response = f"📈 <b>Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
-        
-        for i, trade in enumerate(trading_history, 1):
-            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
-            response += (
-                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
-                f"   Amount: {trade['amount']} tokens\n"
-                f"   Value: {trade['value']}\n"
-                f"   Date: {trade['date']}\n\n"
-            )
-        
-        # Add button to view more
-        keyboard = [
-            [InlineKeyboardButton("View More History", callback_data=f"more_history_{wallet_address}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_trading_history: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while retrieving trading history. Please try again later."
-        )
-
-async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track wallet trades button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking wallet trades is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address you want to track for buys and sells.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for tracking trades
-    context.user_data["expecting"] = "track_wallet_trades_address"
-
-async def handle_track_wallet_deployments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track wallet deployments button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking wallet deployments is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address you want to track for new token deployments.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for tracking deployments
-    context.user_data["expecting"] = "track_wallet_deployments_address"
-
-async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track whale sales button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking whale and dev sales is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter token address
-    await query.edit_message_text(
-        "Please send me the token contract address to track whale and dev sales.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for tracking whale sales
-    context.user_data["expecting"] = "track_whale_sales_token"
-
-async def handle_more_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle more trading history callback"""
-    query = update.callback_query
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Retrieving more trading history... This may take a moment."
-    )
-    
-    try:
-        # Simulate getting more trading history
-        # In a real implementation, you would query blockchain data with pagination
-        trading_history = [
-            {
-                "token": f"Token {i}",
-                "action": "Buy" if i % 3 != 0 else "Sell",
-                "amount": f"{i * 1000}",
-                "value": f"${i * 100}",
-                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
-            } for i in range(8, 20)  # Get next page of results
-        ]
-        
-        if not trading_history:
-            await query.edit_message_text(
-                "❌ No additional trading history found for this wallet."
-            )
-            return
-        
-        # Format the response
-        response = f"📈 <b>More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
-        
-        for i, trade in enumerate(trading_history, 8):  # Continue numbering from previous page
-            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
-            response += (
-                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
-                f"   Amount: {trade['amount']} tokens\n"
-                f"   Value: {trade['value']}\n"
-                f"   Date: {trade['date']}\n\n"
-            )
-        
-        # Add buttons for navigation
-        keyboard = [
-            [
-                InlineKeyboardButton("⬅️ Previous Page", callback_data=f"trading_history_{wallet_address}"),
-                InlineKeyboardButton("Next Page ➡️", callback_data=f"more_history_page2_{wallet_address}")
-            ],
-            [InlineKeyboardButton("Export Full History", callback_data=f"export_history_{wallet_address}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_more_history: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while retrieving more trading history. Please try again later."
-        )
-
+# help handlers
 async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle help button callback"""
     query = update.callback_query
@@ -1440,6 +988,7 @@ async def handle_kol_wallets_help(update: Update, context: ContextTypes.DEFAULT_
         except:
             pass
 
+# main menu handlers
 async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the main menu display"""
 
@@ -1499,9 +1048,9 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             InlineKeyboardButton(f"🔗 Network ({network_display.get(selected_network, selected_network.upper())})", callback_data="select_network"),
             InlineKeyboardButton("❓ Help", callback_data="general_help"),
         ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="back")
-        ],
+        # [
+        #     InlineKeyboardButton("🔙 Back", callback_data="back")
+        # ],
     ]
     
     reply_markup = InlineKeyboardMarkup(keyboard_main)
@@ -1616,7 +1165,7 @@ async def handle_token_analysis(update:Update, context:ContextTypes.DEFAULT_TYPE
     token_analysis_keyboard = [
         [InlineKeyboardButton("🛒 First Buyers & Profits of a token", callback_data="token_first_buyers")],
         [InlineKeyboardButton("💰 Most Profitable Wallets of a token", callback_data="token_most_profitable_wallets")],
-        [InlineKeyboardButton("📈 Market Cap &ATH of a token", callback_data="token_ath")],
+        [InlineKeyboardButton("📈 Market Cap & ATH of a token", callback_data="token_ath")],
         [InlineKeyboardButton("🧑‍💻 Deployer Wallet Scan (Premium)", callback_data="token_deployer_wallet_scan")],
         [InlineKeyboardButton("🐳 Top Holders & Whale Watch (Premium)", callback_data="token_top_holders")],
         [InlineKeyboardButton("💼 High Net Worth Holders (Premium)", callback_data="token_high_net_worth_holders")],
@@ -1755,6 +1304,7 @@ async def handle_kol_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE)
             parse_mode=ParseMode.HTML
         )
 
+# token analysis handlers
 async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle first buyers button callback"""
     query = update.callback_query
@@ -1762,7 +1312,7 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "first_buy_wallet_scan", FREE_TOKEN_SCANS_DAILY
+        user.user_id, "first_buy_wallet_scan", FREE_FIRST_BUYER_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1796,7 +1346,7 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_SCANS_DAILY
+        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1830,7 +1380,7 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "ath_scan", FREE_TOKEN_SCANS_DAILY
+        user.user_id, "ath_scan", FREE_ATH_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1840,7 +1390,7 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"🚫 You've used <b>{current_count}</b> out of <b>{FREE_ATH_SCANS_DAILY}</b> free daily token scans.\n"
             f"Free users can analyze up to {FREE_ATH_SCANS_DAILY} tokens each day to explore market caps, trends, and ATH insights.\n\n"
@@ -1872,7 +1422,7 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "🔐 <b>Deployer Wallet Scanning</b> is an advanced feature available only to <b>Premium</b> users.\n"
             "This feature reveals the original wallet that launched the token and provides:\n"
@@ -1902,9 +1452,9 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "🔍 <b>Top Holders & Whale Analysis</b> gives you deep insight into:\n"
+            "🔍 <b>Top Holders & Whale Analysis</b> is an advanced feature available only to <b>Premium</b> users. It gives you the insight:\n"
             "• The top 10 wallets holding a token 👑\n"
             "• Dev and whale activity (when they buy/sell) 📉📈\n"
             "• Early warnings of dumps or big moves 📡\n\n"
@@ -1935,7 +1485,7 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "💰 <b>High Net Worth Holders</b> analysis shows you:\n"
             "• Wallets holding over $10,000+ in value 💸\n"
@@ -1956,7 +1506,7 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
     await prompt_chain_selection(update, context, "high_net_worth_holders")
 
 
-
+# wallet analysis handlers
 async def handle_wallet_most_profitable_in_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle most profitable wallets in period button callback"""
     query = update.callback_query
@@ -2133,6 +1683,7 @@ async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes
     # Set conversation state to expect wallet address for tokens deployed analysis
     context.user_data["expecting"] = "tokens_deployed_wallet_address"
 
+# track and monitoring handlers
 async def handle_track_wallet_buy_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle track wallet buy/sell button callback"""
     query = update.callback_query
@@ -2279,6 +1830,7 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
             "❌ An error occurred while setting up tracking. Please try again later."
         )
 
+# KOL wallets handlers
 async def handle_kol_wallet_profitability(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle KOL wallet profitability button callback"""
     query = update.callback_query
@@ -2362,8 +1914,150 @@ async def handle_track_whale_wallets(update: Update, context: ContextTypes.DEFAU
     # Set conversation state to expect token address for whale tracking
     context.user_data["expecting"] = "track_whale_wallets_token"
 
+async def prompt_chain_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, feature: str) -> None:
+    """
+    Generic function to prompt user to select a blockchain network
+    
+    Args:
+        update: The update object
+        context: The context object
+        feature: The feature identifier (e.g., 'first_buyers', 'ath', etc.)
+    """
+    query = update.callback_query
+    
+    # Use the default network directly
+    chain = context.user_data.get("default_network")
+    
+    # Store the selected chain in user_data
+    context.user_data["selected_chain"] = chain
+    
+    # Map of feature to expecting state and display name
+    feature_map = {
+        "first_buyers": {
+            "expecting": "first_buyers_token_address",
+            "display": "first buyers"
+        },
+        "token_most_profitable_wallets": {
+            "expecting": "token_most_profitable_wallets_token_address",
+            "display": "most profitable wallets"
+        },
+        "ath": {
+            "expecting": "ath_token_address",
+            "display": "ATH data"
+        },
+        "deployer_wallet_scan": {
+            "expecting": "deployer_wallet_scan_token",
+            "display": "deployer wallet"
+        },
+        "top_holders": {
+            "expecting": "top_holders_token_address",
+            "display": "top holders"
+        },
+        "high_net_worth_holders": {
+            "expecting": "high_net_worth_holders_token_address",
+            "display": "high net worth holders"
+        }
+    }
 
+    # Map of chain to display name
+    chain_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # Get feature info
+    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+    
+    # Prompt user to enter token address with back button
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
+    await query.message.reply_text(
+        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
+        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
+        f"Example: `0x1234...abcd`",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Set conversation state to expect token address for the specific feature
+    context.user_data["expecting"] = feature_info["expecting"]
+
+async def handle_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle chain selection callbacks"""
+    query = update.callback_query
+    callback_data = query.data
+    
+    # Extract feature and chain from callback data
+    # Format: "{feature}_chain_{chain}"
+    parts = callback_data.split("_chain_")
+    if len(parts) != 2:
+        await query.answer("Invalid selection", show_alert=True)
+        return
+    
+    feature = parts[0]
+    chain = parts[1]
+    
+    # Store the selected chain in user_data
+    context.user_data["selected_chain"] = chain
+    
+    # Map of feature to expecting state and display name
+    feature_map = {
+        "first_buyers": {
+            "expecting": "first_buyers_token_address",
+            "display": "first buyers"
+        },
+        "token_most_profitable_wallets": {
+            "expecting": "token_most_profitable_wallets_token_address",
+            "display": "most profitable wallets"
+        },
+        "ath": {
+            "expecting": "ath_token_address",
+            "display": "ATH data"
+        },
+        "deployer_wallet_scan": {
+            "expecting": "deployer_wallet_scan_token",
+            "display": "deployer wallet"
+        },
+        "top_holders": {
+            "expecting": "top_holders_token_address",
+            "display": "top holders"
+        },
+        "high_net_worth_holders": {
+            "expecting": "high_net_worth_holders_token_address",
+            "display": "high net worth holders"
+        }
+    }
+    
+    # Map of chain to display name
+    chain_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # Get feature info
+    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+    
+    # Prompt user to enter token address with back button
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
+        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
+        f"Example: `0x1234...abcd`",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Set conversation state to expect token address for the specific feature
+    context.user_data["expecting"] = feature_info["expecting"]
 
 
 
@@ -2826,148 +2520,459 @@ async def handle_transaction_id_input(update: Update, context: ContextTypes.DEFA
         parse_mode=ParseMode.HTML
     )
 
-async def prompt_chain_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, feature: str) -> None:
-    """
-    Generic function to prompt user to select a blockchain network
-    
-    Args:
-        update: The update object
-        context: The context object
-        feature: The feature identifier (e.g., 'first_buyers', 'ath', etc.)
-    """
+
+
+
+
+async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
+    """Handle top holders callback"""
     query = update.callback_query
+    user = await check_callback_user(update)
     
-    # Use the default network directly
-    chain = context.user_data.get("default_network")
-    
-    # Store the selected chain in user_data
-    context.user_data["selected_chain"] = chain
-    
-    # Map of feature to expecting state and display name
-    feature_map = {
-        "first_buyers": {
-            "expecting": "first_buyers_token_address",
-            "display": "first buyers"
-        },
-        "token_most_profitable_wallets": {
-            "expecting": "token_most_profitable_wallets_token_address",
-            "display": "most profitable wallets"
-        },
-        "ath": {
-            "expecting": "ath_token_address",
-            "display": "ATH data"
-        },
-        "deployer_wallet_scan": {
-            "expecting": "deployer_wallet_scan_token",
-            "display": "deployer wallet"
-        },
-        "top_holders": {
-            "expecting": "top_holders_token_address",
-            "display": "top holders"
-        },
-        "high_net_worth_holders": {
-            "expecting": "high_net_worth_holders_token_address",
-            "display": "high net worth holders"
-        }
-    }
-
-    
-    # Map of chain to display name
-    chain_display = {
-        "eth": "🌐 Ethereum",
-        "base": "🛡️ Base",
-        "bsc": "🔶 BSC"
-    }
-    
-    # Get feature info
-    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
-    
-    # Prompt user to enter token address with back button
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.message.reply_text(
-        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
-        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
-        f"Example: `0x1234...abcd`",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.HTML
-    )
-    
-    # Set conversation state to expect token address for the specific feature
-    context.user_data["expecting"] = feature_info["expecting"]
-
-async def handle_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle chain selection callbacks"""
-    query = update.callback_query
-    callback_data = query.data
-    
-    # Extract feature and chain from callback data
-    # Format: "{feature}_chain_{chain}"
-    parts = callback_data.split("_chain_")
-    if len(parts) != 2:
-        await query.answer("Invalid selection", show_alert=True)
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Top Holders Analysis is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
         return
     
-    feature = parts[0]
-    chain = parts[1]
-    
-    # Store the selected chain in user_data
-    context.user_data["selected_chain"] = chain
-    
-    # Map of feature to expecting state and display name
-    feature_map = {
-        "first_buyers": {
-            "expecting": "first_buyers_token_address",
-            "display": "first buyers"
-        },
-        "token_most_profitable_wallets": {
-            "expecting": "token_most_profitable_wallets_token_address",
-            "display": "most profitable wallets"
-        },
-        "ath": {
-            "expecting": "ath_token_address",
-            "display": "ATH data"
-        },
-        "deployer_wallet_scan": {
-            "expecting": "deployer_wallet_scan_token",
-            "display": "deployer wallet"
-        },
-        "top_holders": {
-            "expecting": "top_holders_token_address",
-            "display": "top holders"
-        },
-        "high_net_worth_holders": {
-            "expecting": "high_net_worth_holders_token_address",
-            "display": "high net worth holders"
-        }
-    }
-    
-    # Map of chain to display name
-    chain_display = {
-        "eth": "🌐 Ethereum",
-        "base": "🛡️ Base",
-        "bsc": "🔶 BSC"
-    }
-    
-    # Get feature info
-    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
-    
-    # Prompt user to enter token address with back button
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
+    # Send processing message
     await query.edit_message_text(
-        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
-        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
-        f"Example: `0x1234...abcd`",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.HTML
+        "🔍 Analyzing token top holders... This may take a moment."
     )
     
-    # Set conversation state to expect token address for the specific feature
-    context.user_data["expecting"] = feature_info["expecting"]
+    try:
+        # Get token holders (placeholder - implement actual blockchain query)
+        holders = await get_token_holders(token_address)
+        token_data = await get_token_data(token_address)
+        
+        if not holders or not token_data:
+            await query.edit_message_text(
+                "❌ Could not find holder data for this token."
+            )
+            return
+        
+        # Format the response
+        response = (
+            f"👥 <b>Top Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        )
+        
+        for i, holder in enumerate(holders[:10], 1):
+            percentage = holder.get('percentage', 'N/A')
+            response += (
+                f"{i}. `{holder['address'][:6]}...{holder['address'][-4:]}`\n"
+                f"   Holdings: {holder.get('amount', 'N/A')} tokens ({percentage}%)\n"
+                f"   Value: ${holder.get('value', 'N/A')}\n\n"
+            )
+        
+        # Add button to export data
+        keyboard = [
+            [InlineKeyboardButton("Export Full Data", callback_data=f"export_th_{token_address}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in handle_th: {e}")
+        await query.edit_message_text(
+            "❌ An error occurred while analyzing top holders. Please try again later."
+        )
+
+async def handle_dw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
+    """Handle deployer wallet analysis callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Deployer Wallet Analysis is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Send processing message
+    await query.edit_message_text(
+        "🔍 Analyzing token deployer wallet... This may take a moment."
+    )
+    
+    try:
+        # Get token info (placeholder - implement actual blockchain query)
+        token_data = await get_token_data(token_address)
+        
+        if not token_data or not token_data.get('deployer_wallet'):
+            await query.edit_message_text(
+                "❌ Could not find deployer wallet data for this token."
+            )
+            return
+        
+        # Format the response
+        deployer = token_data.get('deployer_wallet', {})
+        response = (
+            f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+            f"Deployer Wallet: `{deployer.get('address', 'Unknown')}`\n\n"
+            f"Tokens Deployed: {deployer.get('tokens_deployed', 'N/A')}\n"
+            f"Success Rate: {deployer.get('success_rate', 'N/A')}%\n"
+            f"Avg. ROI: {deployer.get('avg_roi', 'N/A')}%\n"
+            f"Rugpull History: {deployer.get('rugpull_count', 'N/A')} tokens\n\n"
+            f"Risk Assessment: {deployer.get('risk_level', 'Unknown')}"
+        )
+        
+        # Add button to track this deployer
+        keyboard = [
+            [InlineKeyboardButton("Track This Deployer", callback_data=f"track_deployer_{deployer.get('address', '')}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in handle_dw: {e}")
+        await query.edit_message_text(
+            "❌ An error occurred while analyzing deployer wallet. Please try again later."
+        )
+
+async def handle_track_token(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
+    """Handle track token callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Token tracking is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Create tracking subscription
+    from data.models import TrackingSubscription
+    from datetime import datetime
+    
+    subscription = TrackingSubscription(
+        user_id=user.user_id,
+        tracking_type="token",
+        target_address=token_address,
+        is_active=True,
+        created_at=datetime.now()
+    )
+    
+    # Save subscription
+    from data.database import save_tracking_subscription
+    save_tracking_subscription(subscription)
+    
+    # Get token data for name
+    token_data = await get_token_data(token_address)
+    token_name = token_data.get('name', 'Unknown Token') if token_data else 'this token'
+    
+    # Confirm to user
+    await query.edit_message_text(
+        f"✅ Now tracking token: {token_name}\n\n"
+        f"Contract: `{token_address[:6]}...{token_address[-4:]}`\n\n"
+        f"You will receive notifications for significant price movements, "
+        f"whale transactions, and other important events.",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
+    """Handle track wallet callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Wallet tracking is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Create tracking subscription
+    from data.models import TrackingSubscription
+    from datetime import datetime
+    
+    subscription = TrackingSubscription(
+        user_id=user.user_id,
+        tracking_type="wallet",
+        target_address=wallet_address,
+        is_active=True,
+        created_at=datetime.now()
+    )
+    
+    # Save subscription
+    from data.database import save_tracking_subscription
+    save_tracking_subscription(subscription)
+    
+    # Confirm to user
+    await query.edit_message_text(
+        f"✅ Now tracking wallet: `{wallet_address[:6]}...{wallet_address[-4:]}`\n\n"
+        f"You will receive notifications when this wallet makes significant trades, "
+        f"deploys new tokens, or performs other notable actions.",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+async def handle_trading_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
+    """Handle trading history callback"""
+    query = update.callback_query
+    
+    # Send processing message
+    await query.edit_message_text(
+        "🔍 Retrieving trading history... This may take a moment."
+    )
+    
+    try:
+        # Simulate getting trading history
+        # In a real implementation, you would query blockchain data
+        trading_history = [
+            {
+                "token": f"Token {i}",
+                "action": "Buy" if i % 3 != 0 else "Sell",
+                "amount": f"{i * 1000}",
+                "value": f"${i * 100}",
+                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
+            } for i in range(1, 8)
+        ]
+        
+        if not trading_history:
+            await query.edit_message_text(
+                "❌ No trading history found for this wallet."
+            )
+            return
+        
+        # Format the response
+        response = f"📈 <b>Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
+        
+        for i, trade in enumerate(trading_history, 1):
+            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
+            response += (
+                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
+                f"   Amount: {trade['amount']} tokens\n"
+                f"   Value: {trade['value']}\n"
+                f"   Date: {trade['date']}\n\n"
+            )
+        
+        # Add button to view more
+        keyboard = [
+            [InlineKeyboardButton("View More History", callback_data=f"more_history_{wallet_address}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in handle_trading_history: {e}")
+        await query.edit_message_text(
+            "❌ An error occurred while retrieving trading history. Please try again later."
+        )
+
+async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track wallet trades button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Tracking wallet trades is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Prompt user to enter wallet address
+    await query.edit_message_text(
+        "Please send me the wallet address you want to track for buys and sells.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect wallet address for tracking trades
+    context.user_data["expecting"] = "track_wallet_trades_address"
+
+async def handle_track_wallet_deployments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track wallet deployments button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Tracking wallet deployments is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Prompt user to enter wallet address
+    await query.edit_message_text(
+        "Please send me the wallet address you want to track for new token deployments.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect wallet address for tracking deployments
+    context.user_data["expecting"] = "track_wallet_deployments_address"
+
+async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle track whale sales button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user is premium
+    if not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "⭐ <b>Premium Feature</b>\n\n"
+            "Tracking whale and dev sales is only available to premium users.\n\n"
+            "💎 Upgrade to premium to unlock all features!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Prompt user to enter token address
+    await query.edit_message_text(
+        "Please send me the token contract address to track whale and dev sales.\n\n"
+        "Example: `0x1234...abcd`",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Set conversation state to expect token address for tracking whale sales
+    context.user_data["expecting"] = "track_whale_sales_token"
+
+async def handle_more_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
+    """Handle more trading history callback"""
+    query = update.callback_query
+    
+    # Send processing message
+    await query.edit_message_text(
+        "🔍 Retrieving more trading history... This may take a moment."
+    )
+    
+    try:
+        # Simulate getting more trading history
+        # In a real implementation, you would query blockchain data with pagination
+        trading_history = [
+            {
+                "token": f"Token {i}",
+                "action": "Buy" if i % 3 != 0 else "Sell",
+                "amount": f"{i * 1000}",
+                "value": f"${i * 100}",
+                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
+            } for i in range(8, 20)  # Get next page of results
+        ]
+        
+        if not trading_history:
+            await query.edit_message_text(
+                "❌ No additional trading history found for this wallet."
+            )
+            return
+        
+        # Format the response
+        response = f"📈 <b>More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
+        
+        for i, trade in enumerate(trading_history, 8):  # Continue numbering from previous page
+            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
+            response += (
+                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
+                f"   Amount: {trade['amount']} tokens\n"
+                f"   Value: {trade['value']}\n"
+                f"   Date: {trade['date']}\n\n"
+            )
+        
+        # Add buttons for navigation
+        keyboard = [
+            [
+                InlineKeyboardButton("⬅️ Previous Page", callback_data=f"trading_history_{wallet_address}"),
+                InlineKeyboardButton("Next Page ➡️", callback_data=f"more_history_page2_{wallet_address}")
+            ],
+            [InlineKeyboardButton("Export Full History", callback_data=f"export_history_{wallet_address}")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in handle_more_history: {e}")
+        await query.edit_message_text(
+            "❌ An error occurred while retrieving more trading history. Please try again later."
+        )
