@@ -555,8 +555,6 @@ async def get_token_profitable_wallets(token_address: str) -> List[Dict[str, Any
     
     return profitable_wallets
 
-    # Define a function that just returns the token_data
-
 async def get_ath_data(token_address: str) -> Dict[str, Any]:
     """
     Placeholder function for getting the ATH data for a specific token
