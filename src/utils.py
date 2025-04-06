@@ -437,3 +437,87 @@ def format_deployer_wallet_scan_response(deployer_data: Dict[str, Any],
     
     return response, keyboard
 
+def format_top_holders_response(top_holders: List[Dict[str, Any]], 
+                               token_data: Dict[str, Any], 
+                               token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+    """
+    Format the response for top holders analysis
+    
+    Args:
+        top_holders: List of top holder data
+        token_data: Token information
+        token_address: The token address
+        
+    Returns:
+        Tuple of (formatted response text, keyboard buttons)
+    """
+    response = (
+        f"🐳 <b>Top Holders Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        f"Contract: `{token_address}`\n\n"
+    )
+    
+    # Add summary information
+    total_percentage = sum(holder.get('percentage', 0) for holder in top_holders)
+    response += (
+        f"<b>Summary:</b>\n"
+        f"• Top 10 holders control: {round(total_percentage, 2)}% of supply\n"
+        f"• Total holders: {format_number(token_data.get('holders_count', 'N/A'))}\n\n"
+        f"<b>Top Holders:</b>\n"
+    )
+    
+    # Add top holders information
+    for holder in top_holders:
+        wallet_type = holder.get('wallet_type', 'Unknown')
+        exchange_info = f" ({holder.get('exchange_name', '')})" if wallet_type == "Exchange" else ""
+        
+        response += (
+            f"{holder.get('rank', '?')}. `{holder['address'][:6]}...{holder['address'][-4:]}`{exchange_info}\n"
+            f"   Tokens: {format_number(holder.get('token_amount', 'N/A'))} ({holder.get('percentage', 'N/A')}%)\n"
+            f"   Value: ${format_number(holder.get('usd_value', 'N/A'))}\n"
+            f"   Holding since: {holder.get('holding_since', 'N/A')}\n\n"
+        )
+    
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    
+    return response, keyboard
+
+def format_high_net_worth_holders_response(high_net_worth_holders: List[Dict[str, Any]], 
+                                          token_data: Dict[str, Any], 
+                                          token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+    """
+    Format the response for high net worth holders analysis
+    
+    Args:
+        high_net_worth_holders: List of high net worth holder data
+        token_data: Token information
+        token_address: The token address
+        
+    Returns:
+        Tuple of (formatted response text, keyboard buttons)
+    """
+    response = (
+        f"💰 <b>High Net Worth Holders for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        f"Contract: `{token_address}`\n\n"
+        f"<b>Holders with minimum $10,000 worth of tokens:</b>\n\n"
+    )
+    
+    # Add high net worth holders information
+    for i, holder in enumerate(high_net_worth_holders, 1):
+        response += (
+            f"{i}. `{holder['address'][:6]}...{holder['address'][-4:]}`\n"
+            f"   Tokens: {format_number(holder.get('token_amount', 'N/A'))}\n"
+            f"   Value: ${format_number(holder.get('usd_value', 'N/A'))}\n"
+            f"   Portfolio: {holder.get('portfolio_size', 'N/A')} tokens\n"
+            f"   Avg. holding time: {holder.get('avg_holding_time', 'N/A')} days\n"
+            f"   Success rate: {holder.get('success_rate', 'N/A')}%\n"
+            f"   Avg. ROI: {holder.get('avg_roi', 'N/A')}%\n\n"
+        )
+    
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    
+    return response, keyboard
+

@@ -41,6 +41,10 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.answer("You're already at the main menu")
         else:
             await handle_start_menu(update, context)
+    elif callback_data == "select_network":
+        await handle_select_network(update, context)
+    elif callback_data.startswith("set_default_network_"):
+        await handle_set_default_network(update, context)
     elif callback_data == "token_analysis":
         await handle_token_analysis(update, context)
     elif callback_data == "wallet_analysis":
@@ -663,7 +667,7 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             no_data_message_text="❌ Could not find ATH data for this token."
         )
 
-    elif expecting ==  "deployer_wallet_scan_token":
+    elif expecting == "deployer_wallet_scan_token":
         await handle_token_analysis_input(
             update=update,
             context=context,
@@ -675,9 +679,32 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             error_message_text="❌ An error occurred while analyzing the deployer wallet. Please try again later.",
             no_data_message_text="❌ Could not find deployer wallet data for this token."
         )
+
+    elif expecting == "top_holders_token_address":
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="top_holders",
+            get_data_func=get_token_top_holders,
+            format_response_func=format_top_holders_response,
+            scan_count_type="token_scan",
+            processing_message_text="🔍 Analyzing token's top holders... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the token's top holders. Please try again later.",
+            no_data_message_text="❌ Could not find top holders data for this token."
+        )
     
-    # Handle other expecting states...
-    #      
+    elif expecting == "high_net_worth_holders_token_address":
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="high_net_worth_holders",
+            get_data_func=get_high_net_worth_holders,
+            format_response_func=format_high_net_worth_holders_response,
+            scan_count_type="token_scan",
+            processing_message_text="🔍 Analyzing token's high net worth holders... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the token's high net worth holders. Please try again later.",
+            no_data_message_text="❌ Could not find high net worth holders data for this token."
+        )  
 
 async def handle_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
     """Handle top holders callback"""
@@ -1415,6 +1442,22 @@ async def handle_kol_wallets_help(update: Update, context: ContextTypes.DEFAULT_
 
 async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the main menu display"""
+
+    if "default_network" not in context.user_data:
+        context.user_data["default_network"] = "eth"  # Set Ethereum as default
+
+    selected_network = context.user_data.get("default_network")
+    network_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # If no network is selected, show network selection menu first
+    if not selected_network:
+        await handle_select_network(update, context)
+        return
+
     
     welcome_message = (
         f"🆘 Welcome to <b>DeFi-Scope Bot, {update.effective_user.first_name}! 🎉</b>\n\n"
@@ -1453,7 +1496,10 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             InlineKeyboardButton("🐳 KOL wallets", callback_data="kol_wallets")
         ],
         [
+            InlineKeyboardButton(f"🔗 Network ({network_display.get(selected_network, selected_network.upper())})", callback_data="select_network"),
             InlineKeyboardButton("❓ Help", callback_data="general_help"),
+        ],
+        [
             InlineKeyboardButton("🔙 Back", callback_data="back")
         ],
     ]
@@ -1486,8 +1532,73 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             parse_mode=ParseMode.HTML
         )
 
+async def handle_select_network(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle network selection from main menu"""
+    query = update.callback_query
+    
+    # Get currently selected network
+    current_network = context.user_data.get("default_network", "eth")  # Default to Ethereum if none set
+    
+    # Create network button labels with current indicator
+    eth_label = "🌐 Ethereum (Current)" if current_network == "eth" else "🌐 Ethereum" 
+    base_label = "🛡️ Base (Current)" if current_network == "base" else "🛡️ Base" 
+    bsc_label = "🔶 BSC (Current)" if current_network == "bsc" else "🔶 BSC"
+    
+    # Create keyboard with network options
+    keyboard = [
+        [
+            InlineKeyboardButton(eth_label, callback_data="set_default_network_eth"),
+            InlineKeyboardButton(base_label, callback_data="set_default_network_base"),
+            InlineKeyboardButton(bsc_label, callback_data="set_default_network_bsc"),
+        ],
+        [InlineKeyboardButton("🔙 Back to Menu", callback_data="main_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Show network selection message
+    await query.message.reply_text(
+        "🔗 <b>Select Blockchain Network</b>\n\n"
+        "Please choose the blockchain network you'd like to use for token and wallet analyses. Each chain has its own ecosystem, speed, and opportunities:\n\n"
+        "• <b>🌐 Ethereum</b>: The original smart contract platform\n"
+        "• <b>🛡️ Base</b>: Coinbase's Ethereum L2 solution\n"
+        "• <b>🔶 BSC</b>: Binance Smart Chain (BNB Chain)\n\n"
+        "This setting will be used for all token and wallet analyses.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_set_default_network(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle setting default network"""
+    query = update.callback_query
+    callback_data = query.data
+    
+    # Extract network from callback data
+    # Format: "set_default_network_{network}"
+    network = callback_data.replace("set_default_network_", "")
+    
+    # Map of network to display name
+    network_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # Store the selected network in user_data
+    context.user_data["default_network"] = network
+    
+    # Confirm selection
+    await query.answer(f"Network set to {network_display.get(network, network.upper())}")
+    
+    # Return to main menu with the selected network
+    await handle_start_menu(update, context)
+
 async def handle_token_analysis(update:Update, context:ContextTypes.DEFAULT_TYPE)->None: 
     """Handle token analysis button"""
+
+    if not context.user_data.get("default_network"):
+        await handle_select_network(update, context)
+        return
+
     welcome_message = (
         f"✨ <b>What can I do for you?</b>\n\n"
         f"<b>📊 Token Analysis:</b>\n\n"
@@ -1843,6 +1954,8 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
     
     # Prompt user to select a chain
     await prompt_chain_selection(update, context, "high_net_worth_holders")
+
+
 
 async def handle_wallet_most_profitable_in_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle most profitable wallets in period button callback"""
@@ -2724,30 +2837,67 @@ async def prompt_chain_selection(update: Update, context: ContextTypes.DEFAULT_T
     """
     query = update.callback_query
     
-    # Create feature-specific callback data
-    callback_prefix = f"{feature}_chain_"
+    # Use the default network directly
+    chain = context.user_data.get("default_network")
     
-    # Create keyboard with chain options
+    # Store the selected chain in user_data
+    context.user_data["selected_chain"] = chain
+    
+    # Map of feature to expecting state and display name
+    feature_map = {
+        "first_buyers": {
+            "expecting": "first_buyers_token_address",
+            "display": "first buyers"
+        },
+        "token_most_profitable_wallets": {
+            "expecting": "token_most_profitable_wallets_token_address",
+            "display": "most profitable wallets"
+        },
+        "ath": {
+            "expecting": "ath_token_address",
+            "display": "ATH data"
+        },
+        "deployer_wallet_scan": {
+            "expecting": "deployer_wallet_scan_token",
+            "display": "deployer wallet"
+        },
+        "top_holders": {
+            "expecting": "top_holders_token_address",
+            "display": "top holders"
+        },
+        "high_net_worth_holders": {
+            "expecting": "high_net_worth_holders_token_address",
+            "display": "high net worth holders"
+        }
+    }
+
+    
+    # Map of chain to display name
+    chain_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # Get feature info
+    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+    
+    # Prompt user to enter token address with back button
     keyboard = [
-        [
-            InlineKeyboardButton("Ethereum", callback_data=f"{callback_prefix}eth"),
-            InlineKeyboardButton("Base", callback_data=f"{callback_prefix}base"),
-            InlineKeyboardButton("BSC", callback_data=f"{callback_prefix}bsc")
-        ],
         [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Store the feature in context for later use
-    context.user_data["current_feature"] = feature
-
-    # Show chain selection message
     await query.message.reply_text(
-        "🔗 <b>Select Blockchain Network</b>\n\n"
-        "Please choose the blockchain network where the token is deployed:",
+        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
+        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
+        f"Example: `0x1234...abcd`",
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )
+    
+    # Set conversation state to expect token address for the specific feature
+    context.user_data["expecting"] = feature_info["expecting"]
 
 async def handle_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle chain selection callbacks"""
@@ -2797,9 +2947,9 @@ async def handle_chain_selection_callback(update: Update, context: ContextTypes.
     
     # Map of chain to display name
     chain_display = {
-        "eth": "Ethereum",
-        "base": "Base",
-        "bsc": "BSC (BNB Chain)"
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
     }
     
     # Get feature info
@@ -2821,4 +2971,3 @@ async def handle_chain_selection_callback(update: Update, context: ContextTypes.
     
     # Set conversation state to expect token address for the specific feature
     context.user_data["expecting"] = feature_info["expecting"]
-
