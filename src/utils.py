@@ -381,3 +381,59 @@ def format_number(num):
     if isinstance(num, (int, float)):
         return f"{num:,}"
     return num
+
+def format_deployer_wallet_scan_response(deployer_data: Dict[str, Any], 
+                                        token_data: Dict[str, Any], 
+                                        token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+    """
+    Format the response for deployer wallet scan
+    
+    Args:
+        deployer_data: Deployer wallet data
+        token_data: Token information
+        token_address: The token address
+        
+    Returns:
+        Tuple of (formatted response text, keyboard buttons)
+    """
+    # Get deployer address
+    deployer_address = deployer_data.get("deployer_address", "Unknown")
+    
+    response = (
+        f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        f"Contract: `{token_address}`\n"
+        f"Deployer: `{deployer_address}`\n\n"
+        
+        f"<b>Deployer Profile:</b>\n"
+        f"• Tokens Deployed: {deployer_data.get('tokens_deployed', 'N/A')}\n"
+        f"• First Deployment: {deployer_data.get('first_deployment_date', 'N/A')}\n"
+        f"• Last Deployment: {deployer_data.get('last_deployment_date', 'N/A')}\n"
+        f"• Success Rate: {deployer_data.get('success_rate', 'N/A')}%\n"
+        f"• Avg. ROI: {deployer_data.get('avg_roi', 'N/A')}%\n"
+        f"• Rugpull History: {deployer_data.get('rugpull_count', 'N/A')} tokens\n"
+        f"• Risk Assessment: <b>{deployer_data.get('risk_level', 'Unknown')}</b>\n\n"
+        
+        f"<b>Other Tokens by This Deployer:</b>\n"
+    )
+    
+    # Add deployed tokens info
+    deployed_tokens = deployer_data.get("deployed_tokens", [])
+    for i, token in enumerate(deployed_tokens[:5], 1):  # Show top 5 tokens
+        response += (
+            f"{i}. {token.get('name', 'Unknown')} ({token.get('symbol', 'N/A')})\n"
+            f"   Deploy Date: {token.get('deploy_date', 'N/A')}\n"
+            f"   ATH Market Cap: ${format_number(token.get('ath_market_cap', 'N/A'))}\n"
+            f"   X-Multiplier: {token.get('x_multiplier', 'N/A')}\n"
+            f"   Status: {token.get('status', 'Unknown')}\n\n"
+        )
+    
+    # Add note if there are more tokens
+    if len(deployed_tokens) > 5:
+        response += f"<i>+ {len(deployed_tokens) - 5} more tokens</i>\n\n"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    
+    return response, keyboard
+

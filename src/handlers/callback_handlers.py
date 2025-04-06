@@ -8,7 +8,7 @@ from telegram.constants import ParseMode
 
 from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_ATH_SCANS_DAILY, FREE_TOKEN_SCANS_DAILY, FREE_WALLET_SCANS_DAILY, FREE_PROFITABLE_WALLETS_LIMIT, SUBSCRIPTION_WALLET_ADDRESS
 from data.database import (
-    get_token_data, get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
+    get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
 )
 from data.models import User, TrackingSubscription
@@ -79,6 +79,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_kol_wallet_profitability(update, context)
     elif callback_data == "track_whale_wallets":
         await handle_track_whale_wallets(update, context)
+    elif "_chain_" in callback_data:
+        await handle_chain_selection_callback(update, context)
+
     
 
     
@@ -166,7 +169,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         token_address = callback_data.replace("export_mpw_", "")
         await handle_export_mpw(update, context, token_address)
     else:
-        # Unknown callback data
         await query.answer(
             "Sorry, I couldn't process that request. Please try again.", show_alert=True
         )
@@ -659,6 +661,19 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             processing_message_text="🔍 Analyzing token's ATH data... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's ATH data. Please try again later.",
             no_data_message_text="❌ Could not find ATH data for this token."
+        )
+
+    elif expecting ==  "deployer_wallet_scan_token":
+        await handle_token_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="deployer_wallet_scan",
+            get_data_func=get_deployer_wallet_scan_data,
+            format_response_func=format_deployer_wallet_scan_response,
+            scan_count_type="token_scan",
+            processing_message_text="🔍 Analyzing token deployer wallet... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the deployer wallet. Please try again later.",
+            no_data_message_text="❌ Could not find deployer wallet data for this token."
         )
     
     # Handle other expecting states...
@@ -1636,7 +1651,7 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "first_buy_wallet_scan", FREE_FIRST_BUYER_SCANS_DAILY
+        user.user_id, "first_buy_wallet_scan", FREE_TOKEN_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1648,38 +1663,31 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {FREE_FIRST_BUYER_SCANS_DAILY} daily scans.\n\n"
-            f"Premium users enjoy unlimited scans! 💎<b>Upgrade to Premium</b> for more features.\n\n",
+            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_FIRST_BUYER_SCANS_DAILY}</b> free daily scans for <b>First Buyers Analysis</b>.\n"
+            f"This tool lets you discover who bought early, how much they earned, and their trading behavior. Great for identifying smart money moves! 💸\n\n"
+            f"💎 <b>Upgrade to Premium</b> for unlimited scans and deeper DeFi intelligence:\n"
+            f"• Analyze unlimited tokens 🔄\n"
+            f"• Track early buyers & their profit trends 📈\n"
+            f"• Get wallet insights, market cap data, and more! 🚀\n\n"
+            f"🔓 Unlock the full potential of DeFi-Scope with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
     
-    # Prompt user to enter token address with back button
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "first_buyers")
 
-    await query.message.reply_text(
-        "Please send me the token contract address to analyze its first buyers.\n\n"
-        "Example: `0x1234...abcd`",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for first buyers analysis
-    context.user_data["expecting"] = "first_buyers_token_address"
-    
 async def handle_token_most_profitable_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle profitable wallets button callback"""
+    """Handle most profitable wallets button callback"""
     query = update.callback_query
     user = await check_callback_user(update)
     
+    # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY
+        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_SCANS_DAILY
     )
-
+    
     if has_reached_limit and not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
@@ -1689,28 +1697,20 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY} daily scans.\n\n"
-            f"Premium users enjoy unlimited scans! 💎<b>Upgrade to Premium</b> for more features.\n\n",
+            f"📊 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY}</b> daily scans for <b>Most Profitable Wallets</b>.\n"
+            f"This feature helps you uncover top-performing wallets in any token — who's buying, who's profiting, and how much! 🧠💰\n\n"
+            f"💎 <b>Premium users enjoy unlimited scans</b> and access to full profitability metrics:\n"
+            f"• Unlimited wallet analysis 🔍\n"
+            f"• Identify winning traders and copy their strategy 📥\n"
+            f"• Gain edge over the market with real wallet data 🧩\n\n"
+            f"🚀 Ready to level up? <b>Unlock Premium now!</b>",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
     
-    # Prompt user to enter parameters
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-        "Please send me the token contract address to analyze most profitable wallets:\n\n"
-        "Example: `0x1234...abcd`",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect parameters for profitable wallets
-    context.user_data["expecting"] = "token_most_profitable_wallet_scan"
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "token_most_profitable_wallets")
 
 async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle ATH button callback"""
@@ -1719,7 +1719,7 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "ath_scan", FREE_ATH_SCANS_DAILY
+        user.user_id, "ath_scan", FREE_TOKEN_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1731,28 +1731,22 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         await query.edit_message_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {FREE_ATH_SCANS_DAILY} daily token scans.\n\n"
-            f"Premium users enjoy unlimited scans! 💎<b>Upgrade to Premium</b> for more features.",
+            f"🚫 You've used <b>{current_count}</b> out of <b>{FREE_ATH_SCANS_DAILY}</b> free daily token scans.\n"
+            f"Free users can analyze up to {FREE_ATH_SCANS_DAILY} tokens each day to explore market caps, trends, and ATH insights.\n\n"
+            f"💎 <b>Premium users get unlimited scans</b> — no restrictions, no waiting!\n"
+            f"Unlock powerful features like:\n"
+            f"• Unlimited token & wallet scans 🔍\n"
+            f"• Full deployer history & token performance 🧠\n"
+            f"• Real-time tracking alerts 📡\n"
+            f"• Whale & KOL wallet monitoring 🐋\n\n"
+            f"🚀 <b>Upgrade now and dive deeper into DeFi intelligence!</b>",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
     
-    # Prompt user to enter token address with back button
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-        "Please send me the token contract address to check its All-Time High (ATH).\n\n"
-        "Example: `0x1234...abcd`",
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for ATH analysis
-    context.user_data["expecting"] = "ath_token_address"
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "ath")
 
 async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle deployer wallet scan button callback"""
@@ -1763,28 +1757,26 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Deployer wallet scanning is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
+            "🔐 <b>Deployer Wallet Scanning</b> is an advanced feature available only to <b>Premium</b> users.\n"
+            "This feature reveals the original wallet that launched the token and provides:\n"
+            "• A full list of other tokens they’ve deployed 🪙\n"
+            "• Performance stats including ATH market caps 📊\n"
+            "• Insight into how many X’s they did 📈\n\n"
+            "💡 Perfect for spotting patterns and identifying smart (or shady) deployers early!\n\n"
+            "💎 <b>Upgrade to Premium</b> now to unlock this and many more pro features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
-    
-    # Prompt user to enter token address
-    await query.edit_message_text(
-        "Please send me the token contract address to analyze its deployer wallet.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for deployer wallet scan
-    context.user_data["expecting"] = "deployer_wallet_scan_token"
+        
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "deployer_wallet_scan")
 
 async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle top holders button callback"""
@@ -1795,7 +1787,7 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1808,15 +1800,8 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return
     
-    # Prompt user to enter token address
-    await query.edit_message_text(
-        "Please send me the token contract address to analyze its top holders.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for top holders
-    context.user_data["expecting"] = "top_holders_token_address"
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "top_holders")
 
 async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle high net worth token holders button callback"""
@@ -1827,7 +1812,7 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1840,16 +1825,8 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
         )
         return
     
-    # Prompt user to enter token address
-    await query.edit_message_text(
-        "Please send me the token contract address to find high net worth wallets holding this token.\n\n"
-        "Example: `0x1234...abcd`\n\n"
-        "I'll analyze and show you wallets with significant holdings of this token.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for high net worth holders
-    context.user_data["expecting"] = "high_net_worth_holders_token_address"
+    # Prompt user to select a chain
+    await prompt_chain_selection(update, context, "high_net_worth_holders")
 
 async def handle_wallet_most_profitable_in_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle most profitable wallets in period button callback"""
@@ -2719,4 +2696,113 @@ async def handle_transaction_id_input(update: Update, context: ContextTypes.DEFA
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )
+
+async def prompt_chain_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, feature: str) -> None:
+    """
+    Generic function to prompt user to select a blockchain network
+    
+    Args:
+        update: The update object
+        context: The context object
+        feature: The feature identifier (e.g., 'first_buyers', 'ath', etc.)
+    """
+    query = update.callback_query
+    
+    # Create feature-specific callback data
+    callback_prefix = f"{feature}_chain_"
+    
+    # Create keyboard with chain options
+    keyboard = [
+        [
+            InlineKeyboardButton("Ethereum", callback_data=f"{callback_prefix}eth"),
+            InlineKeyboardButton("Base", callback_data=f"{callback_prefix}base"),
+            InlineKeyboardButton("BSC", callback_data=f"{callback_prefix}bsc")
+        ],
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Store the feature in context for later use
+    context.user_data["current_feature"] = feature
+
+    # Show chain selection message
+    await query.edit_message_text(
+        "🔗 <b>Select Blockchain Network</b>\n\n"
+        "Please choose the blockchain network where the token is deployed:",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle chain selection callbacks"""
+    query = update.callback_query
+    callback_data = query.data
+    
+    # Extract feature and chain from callback data
+    # Format: "{feature}_chain_{chain}"
+    parts = callback_data.split("_chain_")
+    if len(parts) != 2:
+        await query.answer("Invalid selection", show_alert=True)
+        return
+    
+    feature = parts[0]
+    chain = parts[1]
+    
+    # Store the selected chain in user_data
+    context.user_data["selected_chain"] = chain
+    
+    # Map of feature to expecting state and display name
+    feature_map = {
+        "first_buyers": {
+            "expecting": "first_buyers_token_address",
+            "display": "first buyers"
+        },
+        "token_most_profitable_wallets": {
+            "expecting": "token_most_profitable_wallets_token_address",
+            "display": "most profitable wallets"
+        },
+        "ath": {
+            "expecting": "ath_token_address",
+            "display": "ATH data"
+        },
+        "deployer_wallet_scan": {
+            "expecting": "deployer_wallet_scan_token",
+            "display": "deployer wallet"
+        },
+        "top_holders": {
+            "expecting": "top_holders_token_address",
+            "display": "top holders"
+        },
+        "high_net_worth_holders": {
+            "expecting": "high_net_worth_holders_token_address",
+            "display": "high net worth holders"
+        }
+    }
+    
+    # Map of chain to display name
+    chain_display = {
+        "eth": "Ethereum",
+        "base": "Base",
+        "bsc": "BSC (BNB Chain)"
+    }
+    
+    # Get feature info
+    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+    
+    # Prompt user to enter token address with back button
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        f"🔍 <b>Token Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
+        f"Please send me the token contract address to analyze its {feature_info['display']}.\n\n"
+        f"Example: `0x1234...abcd`",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Set conversation state to expect token address for the specific feature
+    context.user_data["expecting"] = feature_info["expecting"]
 
