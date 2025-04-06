@@ -690,4 +690,107 @@ async def get_deployer_wallet_scan_data(token_address: str) -> Dict[str, Any]:
     
     return deployer_data
 
+async def get_token_top_holders(token_address: str) -> List[Dict[str, Any]]:
+    """
+    Placeholder function for getting top holders data for a specific token
+    
+    Args:
+        token_address: The token contract address
+    
+    Returns:
+        List of dictionaries containing top holder data
+    """
+    logging.info(f"Placeholder: get_token_holders called for {token_address}")
+    
+    # Generate some dummy top holders data
+    top_holders = []
+    total_supply = random.uniform(1000000, 1000000000)
+    
+    # Generate top 10 holders
+    for i in range(10):
+        # Generate a random wallet address
+        wallet = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+        
+        # Calculate percentage (decreasing as rank increases)
+        percentage = round(random.uniform(30, 5) / (i + 1), 2)
+        
+        # Calculate token amount based on percentage
+        token_amount = round((percentage / 100) * total_supply, 2)
+        
+        # Calculate USD value
+        token_price = random.uniform(0.0001, 0.1)
+        usd_value = round(token_amount * token_price, 2)
+        
+        # Determine if it's a DEX or CEX
+        is_exchange = random.choice([True, False])
+        exchange_type = random.choice(["Uniswap V3", "Uniswap V2", "SushiSwap", "PancakeSwap"]) if is_exchange else None
+        
+        # Determine wallet type
+        wallet_type = "Exchange" if is_exchange else random.choice(["Whale", "Investor", "Team", "Unknown"])
+        
+        top_holders.append({
+            "rank": i + 1,
+            "address": wallet,
+            "token_amount": token_amount,
+            "percentage": percentage,
+            "usd_value": usd_value,
+            "wallet_type": wallet_type,
+            "exchange_name": exchange_type,
+            "holding_since": (datetime.now() - timedelta(days=random.randint(1, 365))).strftime("%Y-%m-%d"),
+            "last_transaction": (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d")
+        })
+    
+    return top_holders
+
+async def get_high_net_worth_holders(token_address: str) -> List[Dict[str, Any]]:
+    """
+    Placeholder function for getting high net worth holders data for a specific token
+    
+    Args:
+        token_address: The token contract address
+    
+    Returns:
+        List of dictionaries containing high net worth holder data
+    """
+    logging.info(f"Placeholder: get_high_net_worth_holders called for {token_address}")
+    
+    # Generate some dummy high net worth holders data
+    high_net_worth_holders = []
+    
+    # Generate 8-12 high net worth holders
+    for i in range(random.randint(8, 12)):
+        # Generate a random wallet address
+        wallet = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+        
+        # Calculate token amount
+        token_amount = round(random.uniform(100000, 10000000), 2)
+        
+        # Calculate USD value (minimum $10,000)
+        token_price = random.uniform(0.001, 0.1)
+        usd_value = max(10000, round(token_amount * token_price, 2))
+        
+        # Generate portfolio data
+        portfolio_size = random.randint(3, 20)
+        avg_holding_time = random.randint(30, 365)
+        
+        # Generate success metrics
+        success_rate = round(random.uniform(50, 95), 2)
+        avg_roi = round(random.uniform(20, 500), 2)
+        
+        high_net_worth_holders.append({
+            "address": wallet,
+            "token_amount": token_amount,
+            "usd_value": usd_value,
+            "portfolio_size": portfolio_size,  # Number of different tokens held
+            "avg_holding_time": avg_holding_time,  # Average days holding tokens
+            "success_rate": success_rate,  # Percentage of profitable trades
+            "avg_roi": avg_roi,  # Average ROI percentage
+            "first_seen": (datetime.now() - timedelta(days=random.randint(100, 1000))).strftime("%Y-%m-%d"),
+            "last_transaction": (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d")
+        })
+    
+    # Sort by USD value (highest first)
+    high_net_worth_holders.sort(key=lambda x: x["usd_value"], reverse=True)
+    
+    return high_net_worth_holders
 
