@@ -1793,8 +1793,16 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Top Holders & Whales analysis is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
+            "🔍 <b>Top Holders & Whale Analysis</b> gives you deep insight into:\n"
+            "• The top 10 wallets holding a token 👑\n"
+            "• Dev and whale activity (when they buy/sell) 📉📈\n"
+            "• Early warnings of dumps or big moves 📡\n\n"
+            "This powerful tool is only available for <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> and gain full access to:\n"
+            "• Real-time tracking of whales & top holders\n"
+            "• Token movement alerts\n"
+            "• Unlimited scans and insights\n\n"
+            "🚀 Stay one step ahead with DeFi intelligence!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1818,8 +1826,16 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
         
         await query.edit_message_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "High Net Worth Token Holders analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "💰 <b>High Net Worth Holders</b> analysis shows you:\n"
+            "• Wallets holding over $10,000+ in value 💸\n"
+            "• Total token worth, quantity held, and average hold time ⏳\n"
+            "• Wallets that move markets – instantly spot smart money moves 🧠\n\n"
+            "This elite-level insight is exclusive to <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> to unlock:\n"
+            "• Full visibility into major token holders\n"
+            "• Premium-level scan tools and unlimited access\n"
+            "• Strategy-altering on-chain data\n\n"
+            "🔓 Get access to what whales are doing behind the scenes!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -2726,7 +2742,7 @@ async def prompt_chain_selection(update: Update, context: ContextTypes.DEFAULT_T
     context.user_data["current_feature"] = feature
 
     # Show chain selection message
-    await query.edit_message_text(
+    await query.message.reply_text(
         "🔗 <b>Select Blockchain Network</b>\n\n"
         "Please choose the blockchain network where the token is deployed:",
         reply_markup=reply_markup,
