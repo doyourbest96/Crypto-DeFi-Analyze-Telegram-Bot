@@ -495,8 +495,8 @@ def update_user_premium_status(
         logging.error(f"Error updating user premium status: {e}")
         raise
 
-
-async def get_token_first_buyers(token_address: str) -> List[Dict[str, Any]]:
+# token_analysis
+async def get_token_first_buyers(token_address: str, chain:str) -> List[Dict[str, Any]]:
     """
     Placeholder function for getting the first buyers data for a specific token
     
@@ -523,7 +523,7 @@ async def get_token_first_buyers(token_address: str) -> List[Dict[str, Any]]:
     
     return first_buyers
 
-async def get_token_profitable_wallets(token_address: str) -> List[Dict[str, Any]]:
+async def get_token_profitable_wallets(token_address: str, chain:str) -> List[Dict[str, Any]]:
     """
     Placeholder function for getting the most profitable wallets for a specific token
     
@@ -555,7 +555,7 @@ async def get_token_profitable_wallets(token_address: str) -> List[Dict[str, Any
     
     return profitable_wallets
 
-async def get_ath_data(token_address: str) -> Dict[str, Any]:
+async def get_ath_data(token_address: str, chain:str) -> Dict[str, Any]:
     """
     Placeholder function for getting the ATH data for a specific token
     
@@ -611,7 +611,7 @@ async def get_ath_data(token_address: str) -> Dict[str, Any]:
     
     return ath_data
 
-async def get_deployer_wallet_scan_data(token_address: str) -> Dict[str, Any]:
+async def get_deployer_wallet_scan_data(token_address: str, chain:str) -> Dict[str, Any]:
     """
     Placeholder function for getting deployer wallet data for a specific token
     
@@ -688,7 +688,7 @@ async def get_deployer_wallet_scan_data(token_address: str) -> Dict[str, Any]:
     
     return deployer_data
 
-async def get_token_top_holders(token_address: str) -> List[Dict[str, Any]]:
+async def get_token_top_holders(token_address: str, chain:str) -> List[Dict[str, Any]]:
     """
     Placeholder function for getting top holders data for a specific token
     
@@ -740,7 +740,7 @@ async def get_token_top_holders(token_address: str) -> List[Dict[str, Any]]:
     
     return top_holders
 
-async def get_high_net_worth_holders(token_address: str) -> List[Dict[str, Any]]:
+async def get_high_net_worth_holders(token_address: str, chain:str) -> List[Dict[str, Any]]:
     """
     Placeholder function for getting high net worth holders data for a specific token
     
@@ -791,4 +791,230 @@ async def get_high_net_worth_holders(token_address: str) -> List[Dict[str, Any]]
     high_net_worth_holders.sort(key=lambda x: x["usd_value"], reverse=True)
     
     return high_net_worth_holders
+
+
+# wallet analysis
+async def get_wallet_data(wallet_address: str, chain: str = "eth") -> dict:
+    """
+    Get data for a wallet address
+    
+    Args:
+        wallet_address: The wallet address to analyze
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        Dictionary containing wallet data
+    """
+    logging.info(f"Placeholder: get_wallet_data called for {wallet_address} on {chain}")
+    
+    # Generate random wallet data
+    now = datetime.now()
+    
+    # Create wallet data dictionary
+    wallet_data = {
+        "address": wallet_address,
+        "first_transaction_date": (now - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d"),
+        "total_transactions": random.randint(10, 1000),
+        "total_tokens_held": random.randint(5, 50),
+        "estimated_value": round(random.uniform(1000, 1000000), 2),
+        "chain": chain,  # Include the chain in the response
+        "transaction_count": {
+            "buys": random.randint(10, 500),
+            "sells": random.randint(10, 300),
+            "transfers": random.randint(5, 100),
+            "swaps": random.randint(5, 100)
+        },
+        "profit_stats": {
+            "total_profit_usd": round(random.uniform(-10000, 100000), 2),
+            "win_rate": round(random.uniform(30, 90), 2),
+            "avg_holding_time_days": round(random.uniform(1, 30), 2),
+            "best_trade_profit": round(random.uniform(1000, 50000), 2),
+            "worst_trade_loss": round(random.uniform(-20000, -100), 2)
+        }
+    }
+    
+    return wallet_data
+
+async def get_wallet_holding_duration(wallet_address: str, chain: str = "eth") -> dict:
+    """
+    Get holding duration data for a wallet
+    
+    Args:
+        wallet_address: The wallet address to analyze
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        Dictionary containing holding duration data
+    """
+  
+    logging.info(f"Placeholder: get_wallet_holding_duration called for {wallet_address} on {chain}")
+    
+    # Get basic wallet data
+    wallet_data = await get_wallet_data(wallet_address, chain)
+    
+    # Generate holding duration data
+    holding_data = {
+        "wallet_address": wallet_address,
+        "avg_holding_time_days": wallet_data["profit_stats"]["avg_holding_time_days"],
+        "chain": chain,
+        "tokens_analyzed": random.randint(10, 50),
+        "holding_distribution": {
+            "less_than_1_day": round(random.uniform(5, 30), 2),
+            "1_to_7_days": round(random.uniform(20, 50), 2),
+            "7_to_30_days": round(random.uniform(10, 40), 2),
+            "more_than_30_days": round(random.uniform(5, 30), 2)
+        },
+        "token_examples": []
+    }
+    
+    # Generate example tokens with holding durations
+    token_names = ["Ethereum", "Uniswap", "Chainlink", "Aave", "Compound", "Synthetix", "Pepe", "Shiba Inu"]
+    token_symbols = ["ETH", "UNI", "LINK", "AAVE", "COMP", "SNX", "PEPE", "SHIB"]
+    
+    for i in range(5):
+        idx = random.randint(0, len(token_names) - 1)
+        holding_days = round(random.uniform(0.5, 60), 1)
+        
+        token_example = {
+            "name": token_names[idx],
+            "symbol": token_symbols[idx],
+            "address": "0x" + ''.join(random.choices('0123456789abcdef', k=40)),
+            "holding_days": holding_days,
+            "profit": round(random.uniform(-5000, 10000), 2)
+        }
+        
+        holding_data["token_examples"].append(token_example)
+    
+    return holding_data
+
+async def get_wallet_most_profitable_in_period(days: int = 30, limit: int = 10, chain: str = "eth") -> list:
+    """
+    Get most profitable wallets in a specific period
+    
+    Args:
+        days: Number of days to analyze
+        limit: Maximum number of wallets to return
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        List of dictionaries containing profitable wallet data
+    """
+    logging.info(f"Placeholder: get_wallet_most_profitable_in_period called for {days} days on {chain}")
+    
+    # Generate dummy profitable wallets data
+    profitable_wallets = []
+    
+    for i in range(limit):
+        wallet_address = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+        
+        wallet = {
+            "address": wallet_address,
+            "total_profit": round(random.uniform(1000, 100000), 2),
+            "win_rate": round(random.uniform(50, 95), 2),
+            "trades_count": random.randint(10, 100),
+            "avg_profit_per_trade": round(random.uniform(100, 2000), 2),
+            "chain": chain,
+            "period_days": days
+        }
+        
+        profitable_wallets.append(wallet)
+    
+    # Sort by total profit (descending)
+    profitable_wallets.sort(key=lambda x: x["total_profit"], reverse=True)
+    
+    return profitable_wallets
+
+async def get_most_profitable_token_deployer_wallets(days: int = 30, limit: int = 10, chain: str = "eth") -> list:
+    """
+    Get most profitable token deployer wallets
+    
+    Args:
+        days: Number of days to analyze
+        limit: Maximum number of wallets to return
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        List of dictionaries containing profitable deployer wallet data
+    """   
+    logging.info(f"Placeholder: get_most_profitable_token_deployer_wallets called for {days} days on {chain}")
+    
+    # Generate dummy deployer wallets data
+    deployer_wallets = []
+    
+    for i in range(limit):
+        wallet_address = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+        
+        wallet = {
+            "address": wallet_address,
+            "tokens_deployed": random.randint(1, 20),
+            "successful_tokens": random.randint(1, 10),
+            "total_profit": round(random.uniform(5000, 500000), 2),
+            "success_rate": round(random.uniform(20, 90), 2),
+            "avg_roi": round(random.uniform(50, 1000), 2),
+            "chain": chain,
+            "period_days": days
+        }
+        
+        deployer_wallets.append(wallet)
+    
+    # Sort by total profit (descending)
+    deployer_wallets.sort(key=lambda x: x["total_profit"], reverse=True)
+    
+    return deployer_wallets
+
+async def get_tokens_deployed_by_wallet(wallet_address: str, chain: str = "eth") -> list:
+    """
+    Get tokens deployed by a wallet
+    
+    Args:
+        wallet_address: The wallet address to analyze
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        List of dictionaries containing token data
+    """   
+    logging.info(f"Placeholder: get_tokens_deployed_by_wallet called for {wallet_address} on {chain}")
+    
+    # Generate dummy tokens data
+    tokens = []
+    now = datetime.now()
+    
+    token_names = ["Super", "Mega", "Ultra", "Hyper", "Rocket", "Moon", "Star", "Galaxy"]
+    token_suffixes = ["Token", "Coin", "Finance", "Cash", "Swap", "Yield", "Dao", "AI"]
+    
+    for i in range(random.randint(3, 10)):
+        # Generate random token name and symbol
+        name_prefix = random.choice(token_names)
+        name_suffix = random.choice(token_suffixes)
+        token_name = f"{name_prefix} {name_suffix}"
+        token_symbol = f"{name_prefix[:1]}{name_suffix[:1]}".upper()
+        
+        # Generate random dates and prices
+        deploy_date = (now - timedelta(days=random.randint(10, 180))).strftime("%Y-%m-%d")
+        current_price = round(random.uniform(0.00001, 10), 6)
+        
+        # Generate random market caps
+        current_market_cap = round(current_price * random.uniform(100000, 10000000), 2)
+        ath_multiplier = random.uniform(1.5, 20)
+        ath_market_cap = round(current_market_cap * ath_multiplier, 2)
+        
+        token = {
+            "address": "0x" + ''.join(random.choices('0123456789abcdef', k=40)),
+            "name": token_name,
+            "symbol": token_symbol,
+            "deploy_date": deploy_date,
+            "current_price": current_price,
+            "current_market_cap": current_market_cap,
+            "ath_market_cap": ath_market_cap,
+            "ath_multiplier": round(ath_multiplier, 2),
+            "chain": chain,
+            "deployer": wallet_address
+        }
+        
+        tokens.append(token)
+    
+    # Sort by deploy date (newest first)
+    tokens.sort(key=lambda x: x["deploy_date"], reverse=True)
+    
+    return tokens
 
