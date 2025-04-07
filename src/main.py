@@ -4,7 +4,7 @@ import sys
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, MessageHandler, filters
 from config import TELEGRAM_TOKEN
 
-from handlers.callback_handlers import handle_callback_query as button_callback, handle_expected_input, handle_start_menu
+from handlers.callback_handlers import handle_callback_query as button_callback, handle_expected_input, handle_start_menu, handle_profitable_period_selection, handle_deployer_period_selection 
 from handlers.error_handlers import error_handler
 from data.database import init_database
 
@@ -19,6 +19,8 @@ def create_bot():
     application.add_handler(MessageHandler(filters.Text(["/start"]), handle_start_menu))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expected_input))
     application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(CallbackQueryHandler(handle_profitable_period_selection, pattern="^profitable_period_"))
+    application.add_handler(CallbackQueryHandler(handle_deployer_period_selection, pattern="^deployer_period_"))
     application.add_error_handler(error_handler)
         
     return application
