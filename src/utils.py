@@ -919,10 +919,7 @@ def format_kol_wallet_profitability_response(data: list) -> tuple:
             f"   {period}-Day Profit: ${wallet.get('period_profit', 'N/A'):,.2f}\n\n"
         )
     
-    keyboard = [
-        [InlineKeyboardButton("Export Data", callback_data="export_kols")],
-        [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
-    ]
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
     
     return response, keyboard
 
@@ -996,8 +993,9 @@ async def handle_period_selection(
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {FREE_WALLET_SCANS_DAILY} daily wallet scans.\n\n"
-            f"Premium users enjoy unlimited scans!",
+            f"You’ve already used <b>{current_count}</b> out of your <b>{FREE_WALLET_SCANS_DAILY}</b> free daily wallet scans available for today. 🚫\n\n"
+            f"To unlock unlimited access to powerful wallet analysis features, upgrade to <b>Premium</b> and explore the full potential of on-chain intelligence. 💎\n"
+            f"With Premium, you can scan as many wallets as you like, track top-performing traders, monitor token deployers, and much more — all without limits! 🚀",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
