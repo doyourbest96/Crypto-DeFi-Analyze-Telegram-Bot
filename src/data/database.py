@@ -833,58 +833,6 @@ async def get_wallet_data(wallet_address: str, chain: str = "eth") -> dict:
     
     return wallet_data
 
-async def get_wallet_holding_duration(wallet_address: str, chain: str = "eth") -> dict:
-    """
-    Get holding duration data for a wallet
-    
-    Args:
-        wallet_address: The wallet address to analyze
-        chain: The blockchain network (eth, base, bsc)
-        
-    Returns:
-        Dictionary containing holding duration data
-    """
-  
-    logging.info(f"Placeholder: get_wallet_holding_duration called for {wallet_address} on {chain}")
-    
-    # Get basic wallet data
-    wallet_data = await get_wallet_data(wallet_address, chain)
-    
-    # Generate holding duration data
-    holding_data = {
-        "wallet_address": wallet_address,
-        "avg_holding_time_days": wallet_data["profit_stats"]["avg_holding_time_days"],
-        "chain": chain,
-        "tokens_analyzed": random.randint(10, 50),
-        "holding_distribution": {
-            "less_than_1_day": round(random.uniform(5, 30), 2),
-            "1_to_7_days": round(random.uniform(20, 50), 2),
-            "7_to_30_days": round(random.uniform(10, 40), 2),
-            "more_than_30_days": round(random.uniform(5, 30), 2)
-        },
-        "token_examples": []
-    }
-    
-    # Generate example tokens with holding durations
-    token_names = ["Ethereum", "Uniswap", "Chainlink", "Aave", "Compound", "Synthetix", "Pepe", "Shiba Inu"]
-    token_symbols = ["ETH", "UNI", "LINK", "AAVE", "COMP", "SNX", "PEPE", "SHIB"]
-    
-    for i in range(5):
-        idx = random.randint(0, len(token_names) - 1)
-        holding_days = round(random.uniform(0.5, 60), 1)
-        
-        token_example = {
-            "name": token_names[idx],
-            "symbol": token_symbols[idx],
-            "address": "0x" + ''.join(random.choices('0123456789abcdef', k=40)),
-            "holding_days": holding_days,
-            "profit": round(random.uniform(-5000, 10000), 2)
-        }
-        
-        holding_data["token_examples"].append(token_example)
-    
-    return holding_data
-
 async def get_wallet_most_profitable_in_period(days: int = 30, limit: int = 10, chain: str = "eth") -> List[Dict[str, Any]]:
     """
     Get the most profitable wallets in a specific period
@@ -965,6 +913,58 @@ async def get_most_profitable_token_deployer_wallets(days: int = 30, limit: int 
     deployer_wallets.sort(key=lambda x: x["total_profit"], reverse=True)
     
     return deployer_wallets
+
+async def get_wallet_holding_duration(wallet_address: str, chain: str = "eth") -> dict:
+    """
+    Get holding duration data for a wallet
+    
+    Args:
+        wallet_address: The wallet address to analyze
+        chain: The blockchain network (eth, base, bsc)
+        
+    Returns:
+        Dictionary containing holding duration data
+    """
+  
+    logging.info(f"Placeholder: get_wallet_holding_duration called for {wallet_address} on {chain}")
+    
+    # Get basic wallet data
+    wallet_data = await get_wallet_data(wallet_address, chain)
+    
+    # Generate holding duration data
+    holding_data = {
+        "wallet_address": wallet_address,
+        "avg_holding_time_days": wallet_data["profit_stats"]["avg_holding_time_days"],
+        "chain": chain,
+        "tokens_analyzed": random.randint(10, 50),
+        "holding_distribution": {
+            "less_than_1_day": round(random.uniform(5, 30), 2),
+            "1_to_7_days": round(random.uniform(20, 50), 2),
+            "7_to_30_days": round(random.uniform(10, 40), 2),
+            "more_than_30_days": round(random.uniform(5, 30), 2)
+        },
+        "token_examples": []
+    }
+    
+    # Generate example tokens with holding durations
+    token_names = ["Ethereum", "Uniswap", "Chainlink", "Aave", "Compound", "Synthetix", "Pepe", "Shiba Inu"]
+    token_symbols = ["ETH", "UNI", "LINK", "AAVE", "COMP", "SNX", "PEPE", "SHIB"]
+    
+    for i in range(5):
+        idx = random.randint(0, len(token_names) - 1)
+        holding_days = round(random.uniform(0.5, 60), 1)
+        
+        token_example = {
+            "name": token_names[idx],
+            "symbol": token_symbols[idx],
+            "address": "0x" + ''.join(random.choices('0123456789abcdef', k=40)),
+            "holding_days": holding_days,
+            "profit": round(random.uniform(-5000, 10000), 2)
+        }
+        
+        holding_data["token_examples"].append(token_example)
+    
+    return holding_data
 
 async def get_tokens_deployed_by_wallet(wallet_address: str, chain: str = "eth") -> list:
     """
