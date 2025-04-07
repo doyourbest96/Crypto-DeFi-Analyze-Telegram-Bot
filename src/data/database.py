@@ -1022,3 +1022,80 @@ async def get_tokens_deployed_by_wallet(wallet_address: str, chain: str = "eth")
     
     return tokens
 
+
+# kol wallet profitability
+async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth") -> list:
+    """
+    Get KOL wallet profitability data (DUMMY IMPLEMENTATION)
+    
+    Args:
+        days: Number of days to analyze
+        limit: Maximum number of results to return
+        chain: Blockchain to analyze
+        
+    Returns:
+        List of KOL wallet profitability data
+    """
+
+    # List of mock KOL names
+    kol_names = [
+        "Vitalik Buterin", "CZ Binance", "SBF", "Arthur Hayes", 
+        "Justin Sun", "Elon Musk", "Crypto Cobain", "DeFi Dad",
+        "Crypto Messiah", "Crypto Whale", "DegenSpartan", "Tetranode",
+        "Hsaka", "Cobie", "DCinvestor", "ChainLinkGod"
+    ]
+    
+    # Generate random KOL wallet data
+    kol_wallets = []
+    for i in range(min(len(kol_names), limit + 5)):  # Generate a few extra to sort later
+        # Create base wallet data
+        total_profit = random.uniform(10000, 1000000)
+        win_rate = random.uniform(40, 95)
+        
+        # Generate random address
+        address = "0x" + "".join(random.choice("0123456789abcdef") for _ in range(40))
+        
+        # Calculate period profit based on days
+        if days == 1:
+            period_profit = total_profit * random.uniform(0.01, 0.1)  # 1-10% of total profit
+        elif days == 7:
+            period_profit = total_profit * random.uniform(0.1, 0.4)   # 10-40% of total profit
+        else:  # 30 days
+            period_profit = total_profit * random.uniform(0.4, 1.0)   # 40-100% of total profit
+        
+        # Generate recent trades
+        recent_trades = []
+        for j in range(random.randint(3, 8)):
+            trade_date = datetime.now() - timedelta(days=random.randint(0, days))
+            token_names = ["ETH", "BTC", "LINK", "UNI", "AAVE", "MKR", "SNX", "YFI", "COMP", "SUSHI"]
+            action = "Buy" if random.random() > 0.4 else "Sell"
+            
+            recent_trades.append({
+                "token": random.choice(token_names),
+                "action": action,
+                "amount": round(random.uniform(0.1, 100), 2),
+                "value": round(random.uniform(1000, 50000), 2),
+                "date": trade_date.strftime("%Y-%m-%d %H:%M")
+            })
+        
+        # Create wallet object
+        wallet = {
+            "name": kol_names[i],
+            "address": address,
+            "total_profit": total_profit,
+            "period_profit": period_profit,
+            "win_rate": round(win_rate, 1),
+            "total_trades": random.randint(50, 500),
+            "avg_position_size": round(random.uniform(5000, 100000), 2),
+            "chain": chain,
+            "period": days,
+            "recent_trades": recent_trades
+        }
+        
+        kol_wallets.append(wallet)
+    
+    # Sort by period profit
+    kol_wallets.sort(key=lambda x: x.get("period_profit", 0), reverse=True)
+    
+    # Limit results
+    return kol_wallets[:limit]
