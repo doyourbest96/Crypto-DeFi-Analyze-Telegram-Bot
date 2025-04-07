@@ -2,7 +2,7 @@
 
 A powerful Telegram bot for analyzing DeFi tokens, tracking wallets, and discovering profitable opportunities in the decentralized finance space.
 
-# 🆘 Welcome to **Crypto DeFi Analyze Bot, {UserName}! 🎉**
+# 🆘 Welcome to **Crypto DeFi Analyze Bot! 🎉**
 
 ## 🔎 **Your Ultimate DeFi Intelligence Bot!**
 Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰
