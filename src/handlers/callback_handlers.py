@@ -1543,14 +1543,8 @@ async def handle_token_analysis_token_input(update: Update, context: ContextType
         feature: The feature identifier (e.g., 'first_buyers', 'ath', etc.)
     """
     query = update.callback_query
-    
-    # Use the default network directly
     chain = context.user_data.get("default_network")
-    print(f"Selected chain for first buyers: {chain}")
-    
-    # Store the selected chain in user_data
-    # context.user_data["selected_chain"] = chain
-    
+        
     # Map of feature to expecting state and display name
     feature_map = {
         "first_buyers": {
@@ -1588,7 +1582,6 @@ async def handle_token_analysis_token_input(update: Update, context: ContextType
     
     # Get feature info
     feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
-    print(f"feature_info for first_buyers: {feature_info}")
     
     # Prompt user to enter token address with back button
     keyboard = [
@@ -1952,29 +1945,40 @@ async def handle_track_wallet_buy_sell(update: Update, context: ContextTypes.DEF
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking wallet buy/sell activity is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "🔍 <b>Track Wallet Buy/Sell Activity</b> is a powerful monitoring tool that alerts you when a specific wallet makes trades. Perfect for following smart money, tracking whales, or monitoring suspicious wallets! 🕵️‍♂️💰\n\n"
+            "🚫 This feature is currently available only for <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> and unlock full access to:\n"
+            "• Real-time buy/sell notifications 📲\n"
+            "• Track multiple wallets simultaneously 📊\n"
+            "• Get token amount and value details 💵\n"
+            "• Stay ahead of market movers 🚀\n\n"
+            "🔓 Tap into the full power of Crypto DeFi Analyze with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
     
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     # Prompt user to enter wallet address
-    await query.edit_message_text(
+    await query.message.reply_text(
         "Please send me the wallet address you want to track for buy/sell activities.\n\n"
         "Example: `0x1234...abcd`\n\n"
         "You'll receive notifications when this wallet makes significant trades.",
+        reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN
     )
     
     # Set conversation state to expect wallet address for tracking
     context.user_data["expecting"] = "track_wallet_buy_sell_address"
+    # await handle_token_analysis_token_input(update, context, "track_wallet_buy_sell")
 
 async def handle_track_new_token_deploy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle track new token deployments button callback"""
@@ -1985,11 +1989,11 @@ async def handle_track_new_token_deploy(update: Update, context: ContextTypes.DE
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking new token deployments is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
@@ -1997,12 +2001,14 @@ async def handle_track_new_token_deploy(update: Update, context: ContextTypes.DE
             parse_mode=ParseMode.HTML
         )
         return
-    
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     # Prompt user to enter wallet address
-    await query.edit_message_text(
+    await query.message.reply_text(
         "Please send me the wallet address you want to track for new token deployments.\n\n"
         "Example: `0x1234...abcd`\n\n"
         "You'll receive notifications when this wallet deploys new tokens.",
+        reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN
     )
     
@@ -2018,11 +2024,11 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "Tracking profitable wallets is only available to premium users.\n\n"
             "Upgrade to premium to unlock all features!",
@@ -2031,8 +2037,10 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
         )
         return
     
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     # Send processing message
-    processing_message = await query.edit_message_text(
+    processing_message = await query.message.reply_text(
         "🔍 Finding most profitable wallets to track... This may take a moment."
     )
     
@@ -2087,36 +2095,7 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
 # KOL wallets handlers
 async def handle_kol_wallet_profitability(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle KOL wallet profitability button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
     
-    # Check if user has reached daily limit
-    has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "kol_wallet_profitability_scan", FREE_TOKEN_SCANS_DAILY
-    )
-    
-    if has_reached_limit and not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.message.reply_text(
-            f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily scans for <b>KOL Wallet Profitability Analysis</b>.\n"
-            f"This feature helps you track the performance of known influencer wallets and their trading strategies. 📊\n\n"
-            f"💎 <b>Upgrade to Premium</b> for unlimited access and advanced features:\n"
-            f"• Run unlimited KOL wallet scans 🔍\n"
-            f"• Track all major influencers in the space 🌟\n"
-            f"• Get detailed profit breakdowns and trading patterns 📈\n\n"
-            f"🔓 Unlock deeper KOL intelligence with Premium today!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Show period selection options
     await handle_period_selection(
         update=update,
         context=context,
