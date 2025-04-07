@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Any
 import random
 from datetime import datetime, timedelta
 
-from .blockchain import is_valid_address, get_token_info, get_wallet_info
+from .blockchain import is_valid_address
 
 async def get_profitable_wallets(days: int = 30, limit: int = 10) -> List[Dict[str, Any]]:
     """Get the most profitable wallets over a specified time period"""
@@ -120,35 +120,35 @@ async def get_all_kol_wallets() -> List[Dict[str, Any]]:
         logging.error(f"Error getting all KOL wallets: {e}")
         return []
 
-async def analyze_token_performance(token_address: str) -> Optional[Dict[str, Any]]:
-    """Analyze the performance of a token over time"""
-    if not await is_valid_address(token_address):
-        return None
+# async def analyze_token_performance(token_address: str) -> Optional[Dict[str, Any]]:
+#     """Analyze the performance of a token over time"""
+#     if not await is_valid_address(token_address):
+#         return None
         
-    try:
-        token_info = await get_token_info(token_address)
-        if not token_info:
-            return None
+#     try:
+#         token_info = await get_token_data(token_address)
+#         if not token_info:
+#             return None
             
-        # This would be replaced with actual blockchain analysis
-        # For now, we'll simulate the data
-        return {
-            "address": token_address,
-            "name": token_info.get("name", "Unknown Token"),
-            "symbol": token_info.get("symbol", "???"),
-            "launch_date": (datetime.now() - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d"),
-            "initial_price": round(token_info.get("current_price", 0.001) / random.uniform(1, 10), 8),
-            "ath_price": token_info.get("ath_price", 0.001),
-            "ath_date": token_info.get("ath_date", "2023-01-01"),
-            "current_price": token_info.get("current_price", 0.001),
-            "roi_since_launch": round(random.uniform(-50, 1000), 2),
-            "volatility": round(random.uniform(20, 200), 2),
-            "liquidity_stability": random.choice(["Low", "Medium", "High"]),
-            "holder_retention": f"{random.randint(10, 90)}%"
-        }
-    except Exception as e:
-        logging.error(f"Error analyzing token performance: {e}")
-        return None
+#         # This would be replaced with actual blockchain analysis
+#         # For now, we'll simulate the data
+#         return {
+#             "address": token_address,
+#             "name": token_info.get("name", "Unknown Token"),
+#             "symbol": token_info.get("symbol", "???"),
+#             "launch_date": (datetime.now() - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d"),
+#             "initial_price": round(token_info.get("current_price", 0.001) / random.uniform(1, 10), 8),
+#             "ath_price": token_info.get("ath_price", 0.001),
+#             "ath_date": token_info.get("ath_date", "2023-01-01"),
+#             "current_price": token_info.get("current_price", 0.001),
+#             "roi_since_launch": round(random.uniform(-50, 1000), 2),
+#             "volatility": round(random.uniform(20, 200), 2),
+#             "liquidity_stability": random.choice(["Low", "Medium", "High"]),
+#             "holder_retention": f"{random.randint(10, 90)}%"
+#         }
+#     except Exception as e:
+#         logging.error(f"Error analyzing token performance: {e}")
+#         return None
 
 async def get_high_net_worth_wallets(limit: int = 10) -> List[Dict[str, Any]]:
     """Get high net worth wallets based on total holdings value"""

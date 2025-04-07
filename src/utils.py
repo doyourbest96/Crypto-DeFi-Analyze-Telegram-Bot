@@ -109,7 +109,7 @@ async def handle_token_analysis_input(
         update: The update object
         context: The context object
         analysis_type: Type of analysis being performed (for logging)
-        get_data_func: Function to get the data (takes token_address)
+        get_data_func: Function to get the data (takes token_address and chain)
         format_response_func: Function to format the response (takes data and token_data)
         scan_count_type: Type of scan to increment count for
         processing_message_text: Text to show while processing
@@ -117,15 +117,17 @@ async def handle_token_analysis_input(
         no_data_message_text: Text to show when no data is found
     """
     token_address = update.message.text.strip()
+    chain = context.user_data.get("default_network")
+    print(f"Selected chain: {chain}")
     
     # Validate address
-    if not await is_valid_address(token_address):
+    if not await is_valid_token_contract(token_address, chain):
         # Add back button to validation error message
         keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            "⚠️ Please provide a valid Ethereum address or token contract address.",
+            f"⚠️ Something went wrong.⚠️ Please provide a valid token contract address for {chain}.",
             reply_markup=reply_markup
         )
         return
@@ -135,10 +137,10 @@ async def handle_token_analysis_input(
     
     try:
         # Get data
-        data = await get_data_func(token_address)
-        token_data = await get_token_data(token_address)
+        token_info = await get_token_info(token_address, chain)
+        data = await get_data_func(token_address, chain)
         
-        if not data or not token_data:
+        if not data or not token_info:
             # Add back button when no data is found
             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -150,7 +152,7 @@ async def handle_token_analysis_input(
             return
         
         # Format the response
-        response, keyboard = format_response_func(data, token_data, token_address)
+        response, keyboard = format_response_func(data, token_info, token_address)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         success = False
@@ -201,66 +203,43 @@ async def handle_token_analysis_input(
             reply_markup=reply_markup
         )
 
-async def get_token_data(token_address: str) -> dict:
-    """
-    Placeholder function for getting token data
+async def get_token_info(token_address: str, chain: str = "eth") -> Optional[Dict[str, Any]]:
+    """Get detailed information about a token"""
+    if not await is_valid_token_contract(token_address, chain):
+        return None
     
-    Args:
-        token_address: The token contract address
-    
-    Returns:
-        Dictionary containing token data
-    """
-
-    logging.info(f"Placeholder: get_token_data called for {token_address}")
-    
-    # Generate random token data for demonstration purposes
-    token_symbols = ["USDT", "WETH", "PEPE", "SHIB", "DOGE", "LINK", "UNI", "AAVE", "COMP", "SNX"]
-    token_names = ["Tether", "Wrapped Ethereum", "Pepe", "Shiba Inu", "Dogecoin", "Chainlink", "Uniswap", "Aave", "Compound", "Synthetix"]
-    
-    # Pick a random name and symbol
-    index = random.randint(0, len(token_symbols) - 1)
-    symbol = token_symbols[index]
-    name = token_names[index]
-    
-    # Generate random price and market cap
-    current_price = round(random.uniform(0.00001, 100), 6)
-    market_cap = round(current_price * random.uniform(1000000, 10000000000), 2)
-    
-    # Generate random ATH data
-    ath_multiplier = random.uniform(1.5, 10)
-    ath_price = round(current_price * ath_multiplier, 6)
-    ath_market_cap = round(market_cap * ath_multiplier, 2)
-    
-    # Generate random dates
-    now = datetime.now()
-    launch_date = (now - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d")
-    ath_date = (now - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
-    
-    # Create token data dictionary
-    token_data = {
-        "address": token_address,
-        "name": name,
-        "symbol": symbol,
-        "current_price": current_price,
-        "current_market_cap": market_cap,
-        "holders_count": random.randint(100, 10000),
-        "liquidity": round(random.uniform(10000, 1000000), 2),
-        "launch_date": launch_date,
-        "ath_price": ath_price,
-        "ath_date": ath_date,
-        "ath_market_cap": ath_market_cap,
-        "deployer_wallet": {
-            "address": "0x" + ''.join(random.choices('0123456789abcdef', k=40)),
-            "tokens_deployed": random.randint(1, 20),
-            "success_rate": round(random.uniform(10, 100), 2),
-            "avg_roi": round(random.uniform(-50, 500), 2),
-            "rugpull_count": random.randint(0, 5),
-            "risk_level": random.choice(["Low", "Medium", "High", "Very High"])
+    try:      
+        # Get the appropriate web3 provider based on chain
+        w3 = get_web3_provider(chain)
+        
+        # ERC20 ABI for basic token information
+        abi = [
+            {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
+            {"constant": True, "inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "type": "function"},
+            {"constant": True, "inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "type": "function"},
+            {"constant": True, "inputs": [], "name": "totalSupply", "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
+        ]
+        
+        # Create contract instance
+        contract = w3.eth.contract(address=token_address, abi=abi)
+        
+        # Get basic token information
+        name = contract.functions.name().call()
+        symbol = contract.functions.symbol().call()
+        decimals = contract.functions.decimals().call()
+        total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
+        
+        # Simulate historical data
+        return {
+            "address": token_address,
+            "name": name,
+            "symbol": symbol,
+            "decimals": decimals,
+            "total_supply": total_supply
         }
-    }
-    
-    return token_data
+    except Exception as e:
+        logging.error(f"Error getting token info on {chain}: {e}")
+        return None
 
 def format_first_buyers_response(first_buyers: List[Dict[str, Any]], 
                                 token_data: Dict[str, Any], 
