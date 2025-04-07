@@ -892,7 +892,40 @@ async def prompt_wallet_chain_selection(update: Update, context: ContextTypes.DE
 #     # Set conversation state to expect input for the specific feature
 #     context.user_data["expecting"] = feature_info["expecting"]
 
-# Now update the wallet analysis handler functions
+
+# kol wallet profitability
+def format_kol_wallet_profitability_response(data: list) -> tuple:
+    """
+    Format KOL wallet profitability response
+    
+    Args:
+        data: List of KOL wallet profitability data
+        
+    Returns:
+        Tuple of (formatted response text, keyboard buttons)
+    """
+    period = data[0].get("period", 30) if data else 30
+    
+    response = (
+        f"👑 <b>KOL Wallets Profitability Analysis - {period} Day Overview</b>\n\n"
+        f"🧬 <b>Total KOL Wallets Analyzed:</b> A total of {len(data)} influential KOL (Key Opinion Leader) wallets were included in this report, offering a unique glimpse into how the most impactful traders and investors have been performing during the selected period.\n\n"
+    )
+
+    for i, wallet in enumerate(data, 1):
+        response += (
+            f"{i}. <b>{wallet.get('name', 'Unknown KOL')}</b>\n"
+            f"   Wallet: `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
+            f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n"
+            f"   {period}-Day Profit: ${wallet.get('period_profit', 'N/A'):,.2f}\n\n"
+        )
+    
+    keyboard = [
+        [InlineKeyboardButton("Export Data", callback_data="export_kols")],
+        [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
+    ]
+    
+    return response, keyboard
+
 
 async def handle_wallet_holding_duration_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle wallet holding duration input"""
@@ -991,3 +1024,4 @@ async def handle_period_selection(
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )
+
