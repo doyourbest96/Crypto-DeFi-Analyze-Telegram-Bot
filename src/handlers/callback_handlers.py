@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from config import FREE_TOKEN_SCANS_DAILY, FREE_RESPONSE_DAILY, FREE_WALLET_SCANS_DAILY
+from config import FREE_TOKEN_SCANS_DAILY, FREE_RESPONSE_DAILY, FREE_WALLET_SCANS_DAILY, PREMIUM_RESPONSE_DAILY
 from data.database import (
     get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
@@ -1695,32 +1695,30 @@ async def handle_profitable_period_selection(update: Update, context: ContextTyp
     await handle_period_selection_callback(
         update=update,
         context=context,
-        scan_type="wallet_most_profitable_in_period_scan",
+        scan_count_type="wallet_most_profitable_in_period_scan",
         get_data_func=get_wallet_most_profitable_in_period,
         format_response_func=format_wallet_most_profitable_response,
         processing_message_text="🔍 Finding most profitable wallets in the last {days} days... This may take a moment.",
         error_message_text="❌ An error occurred while analyzing profitable wallets. Please try again later.",
         no_data_message_text="❌ Could not find profitable wallets for this period.",
         free_limit=FREE_RESPONSE_DAILY,
-        premium_limit=10
+        premium_limit=PREMIUM_RESPONSE_DAILY
     )
 
 async def handle_deployer_period_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle selection of time period for profitable token deployer wallets analysis"""
-    from data.database import get_most_profitable_token_deployer_wallets
-    from utils import format_deployer_wallets_response
     
     await handle_period_selection_callback(
         update=update,
         context=context,
         get_data_func=get_most_profitable_token_deployer_wallets,
         format_response_func=format_deployer_wallets_response,
-        scan_count_type="wallet_scan",
+        scan_count_type="most_profitable_token_deployer_scan",
         processing_message_text="🔍 Finding most profitable token deployers in the last {days} days... This may take a moment.",
         error_message_text="❌ An error occurred while analyzing profitable token deployers. Please try again later.",
         no_data_message_text="❌ Could not find profitable token deployers for this period.",
         free_limit=FREE_RESPONSE_DAILY,
-        premium_limit=10
+        premium_limit=PREMIUM_RESPONSE_DAILY
     )
 
 # track and monitoring handlers
