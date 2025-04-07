@@ -395,7 +395,7 @@ async def handle_command_premium_help(update: Update, context: ContextTypes.DEFA
         premium_until = user.premium_until.strftime("%d %B %Y") if user.premium_until else "Unknown"
         
         premium_help_text = (
-            f"🌟 <b>DeFi-Scope Premium Features</b>\n\n"
+            f"🌟 <b>Crypto DeFi Analyze Premium Features</b>\n\n"
             f"Thank you for being a premium user! Your subscription is active until: <b>{premium_until}</b>\n\n"
             f"<b>Here's what you can do with your premium access:</b>\n\n"
             f"<b>🔍 Advanced Token Analysis:</b>\n"
@@ -424,7 +424,7 @@ async def handle_command_premium_help(update: Update, context: ContextTypes.DEFA
     else:
         # User is not premium, show premium info
         premium_text = (
-            "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
+            "⭐ <b>Upgrade to Crypto DeFi Analyze Premium</b>\n\n"
             "<b>Premium Benefits:</b>\n"
             "• Unlimited token and wallet scans\n"
             "• Access to deployer wallet analysis\n"

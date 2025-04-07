@@ -48,7 +48,7 @@ async def check_premium_required(update: Update, context: ContextTypes.DEFAULT_T
 async def send_premium_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, plan: str, premium_until: datetime) -> None:
     """Send a welcome message with premium tips to new premium users"""
     welcome_message = (
-        f"🎉 <b>Welcome to DeFi-Scope Premium!</b>\n\n"
+        f"🎉 <b>Welcome to Crypto DeFi Analyze Premium!</b>\n\n"
         f"Hi {user.first_name}, thank you for upgrading to our premium service.\n\n"
         f"<b>Here are some premium features you can now access:</b>\n\n"
         f"• <b>Unlimited Token & Wallet Scans</b>\n"

@@ -17,7 +17,7 @@ SUBSCRIPTION_WALLET_ADDRESS=os.getenv("SUBSCRIPTION_WALLET_ADDRESS")
 
 # Database configuration
 MONGODB_URI = os.getenv("MONGODB_URI")
-DB_NAME = os.getenv("DB_NAME", "defi_scope_bot")
+DB_NAME = os.getenv("DB_NAME", "crypto_defi_analyze_bot")
 
 # Rate limits for free users
 FREE_TOKEN_SCANS_DAILY=3

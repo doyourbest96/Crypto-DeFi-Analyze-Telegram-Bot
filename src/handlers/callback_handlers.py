@@ -37,7 +37,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_start_menu(update, context)
     elif callback_data == "back":
         current_text = query.message.text or query.message.caption or ""
-        if "Welcome to DeFi-Scope Bot" in current_text and "Your Ultimate DeFi Intelligence Bot" in current_text:
+        if "Welcome to Crypto DeFi Analyze Bot" in current_text and "Your Ultimate DeFi Intelligence Bot" in current_text:
             await query.answer("You're already at the main menu")
         else:
             await handle_start_menu(update, context)
@@ -738,7 +738,7 @@ async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
 
     general_help_text = (
-        "<b>🆘 Welcome to DeFi-Scope Help Center</b>\n\n"
+        "<b>🆘 Welcome to Crypto DeFi Analyze Help Center</b>\n\n"
         "I’m your trusted assistant for navigating the world of DeFi. Use me to analyze tokens, uncover wallet activity, and monitor top-performing or suspicious wallets across the blockchain. 🔍📈\n\n"
         
         "<b>📊 Token Analysis:</b>\n"
@@ -1034,7 +1034,7 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
     
     welcome_message = (
-        f"🆘 Welcome to <b>DeFi-Scope Bot, {update.effective_user.first_name}! 🎉</b>\n\n"
+        f"🆘 Welcome to <b>Crypto DeFi Analyze Bot, {update.effective_user.first_name}! 🎉</b>\n\n"
         f"🔎 <b>Your Ultimate DeFi Intelligence Bot!</b>\n"
         f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
         f"✨ <b>What can I do for you?</b>\n\n"
@@ -1355,7 +1355,7 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"• Analyze unlimited tokens 🔄\n"
             f"• Track early buyers & their profit trends 📈\n"
             f"• Get wallet insights, market cap data, and more! 🚀\n\n"
-            f"🔓 Unlock the full potential of DeFi-Scope with Premium access!",
+            f"🔓 Unlock the full potential of Crypto DeFi Analyze with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1608,7 +1608,7 @@ async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes
             "• Wallet profit and claim tracking 💰\n"
             "• Early buyer detection tools 📈\n"
             "• Deep dive DeFi intelligence 🚀\n\n"
-            "🔓 Tap into the full power of DeFi-Scope with Premium access!",
+            "🔓 Tap into the full power of Crypto DeFi Analyze with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -2178,7 +2178,7 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         await query.edit_message_text(
             f"✨ <b>You're Already a Premium User!</b>\n\n"
-            f"Thank you for supporting DeFi-Scope Bot.\n\n"
+            f"Thank you for supporting Crypto DeFi Analyze Bot.\n\n"
             f"Your premium subscription is active until: <b>{premium_until}</b>\n\n"
             f"Enjoy all the premium features!",
             parse_mode=ParseMode.HTML
@@ -2186,11 +2186,11 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     
     premium_text = (
-        "⭐ <b>Upgrade to DeFi-Scope Premium</b>\n\n"
+        "⭐ <b>Upgrade to Crypto DeFi Analyze Premium</b>\n\n"
 
         "<b>🚀 Why Go Premium?</b>\n"
         "Gain unlimited access to powerful tools that help you track tokens, analyze wallets, "
-        "and monitor whales like a pro. With DeFi-Scope Premium, you'll stay ahead of the market and "
+        "and monitor whales like a pro. With Crypto DeFi Analyze Premium, you'll stay ahead of the market and "
         "make smarter investment decisions.\n\n"
 
         "<b>🔥 Premium Benefits:</b>\n"
@@ -2214,7 +2214,7 @@ async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         "• 0.25 ETH per month\n"
         "• 1.0 BNB per month\n\n"
 
-        "🔹 <b>Upgrade now</b> to unlock the full power of DeFi-Scope and take control of your investments!\n"
+        "🔹 <b>Upgrade now</b> to unlock the full power of Crypto DeFi Analyze and take control of your investments!\n"
         "Select a plan below to get started:"
     )
     
@@ -2449,7 +2449,7 @@ async def handle_payment_made(update: Update, context: ContextTypes.DEFAULT_TYPE
             # Send confirmation to user
             await query.edit_message_text(
                 f"✅ <b>Payment Verified - Premium Activated!</b>\n\n"
-                f"Thank you for upgrading to DeFi-Scope Premium.\n\n"
+                f"Thank you for upgrading to Crypto DeFi Analyze Premium.\n\n"
                 f"<b>Transaction Details:</b>\n"
                 f"• Plan: {plan.capitalize()}\n"
                 f"• Amount: {expected_amount} {currency.upper()}\n"

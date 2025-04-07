@@ -1,55 +1,81 @@
-# DeFi-Scope-Test-Telegram-Bot
+# Crypto DeFi Analyze Telegram Bot
 
 A powerful Telegram bot for analyzing DeFi tokens, tracking wallets, and discovering profitable opportunities in the decentralized finance space.
 
-## Features
+# 🆘 Welcome to **Crypto DeFi Analyze Bot, {UserName}! 🎉**
 
-### Token Analysis
-- First buyers detection
-- All-time high market cap analysis
-- Deployer wallet analysis (Premium)
-- Top holders analysis (Premium)
+## 🔎 **Your Ultimate DeFi Intelligence Bot!**
+Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰
 
-### Wallet Analysis
-- Most profitable wallets in a token
-- Wallet holding time analysis
-- Tokens deployed by a wallet (Premium)
+## ✨ **What can I do for you?**
 
-### Tracking & Monitoring
-- Track tokens, wallets, or deployers (Premium)
-- Profitable wallets across all tokens (Premium)
-- High net worth wallet monitoring (Premium)
+### 📊 **Token Analysis**
 
-### Special Lists
-- Most profitable token deployer wallets
-- KOL (Key Opinion Leaders) wallets profitability
+- 🔹 **First Buyers & Profits of a Token:**  
+  See the first 1-50 buy wallets of a token with buy & sell amount, trades, PNL, and win rate.  
+  *(Free users: 3 token scans daily | Premium: Unlimited)*
+
+- 🔹 **Most Profitable Wallets of a Token:**  
+  Discover wallets with the highest profits in any token.  
+  *(Free users: 3 token scans daily | Premium: Unlimited)*
+
+- 🔹 **Market Cap & ATH:**  
+  View all-time high (ATH) market cap, date, and % drop from ATH.  
+  *(Free users: 3 token scans daily | Premium: Unlimited)*
+
+- 🔹 **Deployer Wallet Scan:** *(Premium)*  
+  Reveal the deployer wallet of any token and see other tokens deployed, their ATH market cap, and ROI.
+
+- 🔹 **Top Holders & Whale Watch:** *(Premium)*  
+  View top 10 holders and whale wallets of any token.
+
+- 🔹 **High Net Worth Wallet Holders:** *(Premium)*  
+  See wallets with $10,000+ holdings, total USD worth, token list, and holding durations.
+
+---
+
+### 🕵️ **Wallet Analysis**
+
+- 🔹 **Most Profitable Wallets in a Time Period:**  
+  Find wallets with highest profits in 1-30 days.  
+  *(Free: 2 wallets per query | Premium: Unlimited)*
+
+- 🔹 **Wallet Holding Duration:**  
+  Analyze how long a wallet holds before selling.  
+  *(Free: 3 scans daily | Premium: Unlimited)*
+
+- 🔹 **Most Profitable Token Deployer Wallets:**  
+  Spot high-profit deployers in 1-30 days.  
+  *(Free: 2 deployers per query | Premium: Unlimited)*
+
+- 🔹 **Tokens Deployed by Wallet:** *(Premium)*  
+  See tokens deployed by any wallet, with name, ticker, current price, deployment date, market cap, and ATH.
+
+---
+
+### 🔔 **Tracking & Monitoring** *(Premium)*
+
+- 🔹 **Track Buy/Sell Activity:**  
+  Get alerts when a wallet buys or sells any token.
+
+- 🔹 **Track New Token Deployments:**  
+  Be notified when a wallet (or its linked wallets) deploy a new token.
+
+- 🔹 **Profitable Wallets in a Token:**  
+  Track most profitable wallets in any token within 1-30 days.
+
+---
+
+### 🐳 **KOL Wallets**
+
+- 🔹 **KOL Wallets Profitability:**  
+  Monitor top KOL wallets' performance and PNL in 1-30 days.  
+  *(Free: 3 scans daily | Premium: Unlimited)*
+
+- 🔹 **Track Whale Wallets:** *(Premium)*  
+  Get notified when Devs, top holders, or whales sell a token.
 
 
-## Commands
-
-### Token Analysis
-- `/fb <token_address>` - First 1-50 buy wallets of a token
-- `/ath <token_address>` - All time high market cap of a token
-- `/dw <token_address>` - Scan token contract to reveal deployer wallet (Premium)
-- `/th <token_address>` - Scan token for top holders (Premium)
-
-### Wallet Analysis
-- `/mpw <token_address>` - Most profitable wallets in a token
-- `/wh <wallet_address> <token_address>` - How long a wallet holds a token
-- `/td <wallet_address>` - Tokens deployed by a wallet (Premium)
-
-### Tracking & Monitoring
-- `/track <type> <address>` - Track tokens, wallets or deployments (Premium)
-- `/pw` - Profitable wallets in any token (Premium)
-- `/hnw` - High net worth wallet holders (Premium)
-
-### Special Lists
-- `/ptd` - Most profitable token deployer wallets
-- `/kol` - KOL wallets profitability
-
-### Other Commands
-- `/premium` - Upgrade to premium
-- `/help` - Show help information
 
 ### Premium Features
 
@@ -63,19 +89,12 @@ Upgrade to premium to unlock:
 - High net worth wallet monitoring
 - Priority support
 
-Pricing Plans
-
-- Quarterly: $49.99 ($16.66/month)
-- Annual: $149.99 ($12.50/month)
-- Monthly: $19.99/month
-
-
 ## Setup and Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/dodger213/DeFi-Scope-Test-Telegram-Bot.git
-cd DeFi-Scope-Test-Telegram-Bot
+git clone https://github.com/dodger213/Crypto-DeFi-Analyze-Telegram-Bot.git
+cd Crypto-DeFi-Analyze-Telegram-Bot
 ```
 
 2. Install dependencies:
@@ -87,9 +106,18 @@ pip install -r requirements.txt
 3. Set up environment variables:
 
 ```bash
-TELEGRAM_BOT_TOKEN=your_bot_token
-MONGODB_URI=your_mongodb_uri
-DB_NAME=defi_scope_bot
+MONGODB_URI="mongodb://localhost:27017/"
+
+TELEGRAM_TOKEN="your telegram bot token"
+
+FREE_TOKEN_SCANS_DAILY=3
+FREE_WALLET_SCANS_DAILY=3
+
+FREE_RESPONSE_DAILY = 2
+PREMIUM_RESPONSE_DAILY = 10
+
+WEB3_PROVIDER_URI="Your web3 provider uri"
+ETHERSCAN_API_KEY="Your ethrescan api key"
 ```
 
 4. Run the bot:
@@ -103,3 +131,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 This project is licensed under the [MIT License](./LICENSE) - see the LICENSE file for details.
+
+## Contact
+Please contact me via [telegram](https://t.me/stevendev0822), if you have any problems.
