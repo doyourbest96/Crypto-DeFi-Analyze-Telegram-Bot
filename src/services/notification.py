@@ -334,7 +334,7 @@
 #             await send_notification(
 #                 user.user_id,
 #                 f"⚠️ *Premium Expiration Reminder*\n\n"
-#                 f"Your DeFi-Scope Bot premium subscription will expire in {days_left} day{'s' if days_left > 1 else ''}.\n\n"
+#                 f"Your Crypto DeFi Analyze Bot premium subscription will expire in {days_left} day{'s' if days_left > 1 else ''}.\n\n"
 #                 f"Renew now to maintain access to all premium features!",
 #                 reply_markup=reply_markup
 #             )
@@ -353,7 +353,7 @@
 #         await send_notification(
 #             user.user_id,
 #             f"⏰ *Premium Subscription Expired*\n\n"
-#             f"Your DeFi-Scope Bot premium subscription has expired.\n\n"
+#             f"Your Crypto DeFi Analyze Bot premium subscription has expired.\n\n"
 #             f"You'll no longer have access to premium features such as:\n"
 #             f"• Unlimited token and wallet scans\n"
 #             f"• Tracking tokens, wallets, and deployers\n"
@@ -412,7 +412,7 @@
         
 #         await send_notification(
 #             user_id,
-#             f"🌟 *Welcome to DeFi-Scope Premium!*\n\n"
+#             f"🌟 *Welcome to Crypto DeFi Analyze Premium!*\n\n"
 #             f"Thank you for upgrading to our {plan_type} plan.\n\n"
 #             f"Your premium subscription is now active and will expire on *{expiry_date}*.\n\n"
 #             f"You now have access to all premium features:\n"
