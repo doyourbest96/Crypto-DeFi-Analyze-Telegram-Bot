@@ -7,6 +7,23 @@ from web3 import Web3
 from web3.exceptions import InvalidAddress, ContractLogicError
 
 from config import WEB3_PROVIDER_URI
+
+from datetime import datetime, timedelta
+
+from data.database import (
+    get_all_active_tracking_subscriptions,
+    get_token_profitable_wallets,
+)
+
+from services.notification import (
+    send_tracking_notification,
+    format_wallet_activity_notification,
+    format_token_deployment_notification,
+    format_profitable_wallet_notification
+)
+
+from utils import get_token_info
+
 # Configure web3 connection
 # This would be replaced with your actual blockchain node connection
 w3_eth = Web3(Web3.HTTPProvider(f"https://mainnet.infura.io/v3/{WEB3_PROVIDER_URI}"))
@@ -176,130 +193,248 @@ def check_providers():
     
     return eth_connected, base_connected, bsc_connected
 
-# def get_chain_display_name(chain: str) -> str:
-#     """Get a user-friendly display name for a chain"""
-#     chain_display = {
-#         "eth": "🌐 Ethereum",
-#         "base": "🛡️ Base",
-#         "bsc": "🔶 BSC"
-#     }
-#     return chain_display.get(chain, chain.upper())
 
-# async def get_wallet_info(wallet_address: str, chain: str = "eth") -> Optional[Dict[str, Any]]:
-#     """Get detailed information about a wallet"""
-#     if not await is_valid_wallet_address(wallet_address, chain):
-#         return None
+async def get_recent_transactions(
+    wallet_address: str, 
+    token_address: Optional[str] = None,
+    from_time: Optional[datetime] = None
+) -> List[Dict[str, Any]]:
+    """
+    Get recent transactions for a wallet, optionally filtered by token
     
-#     try:
-#         # This would be replaced with actual blockchain query
-#         # For now, we'll simulate the data
+    Args:
+        wallet_address: The wallet address to get transactions for
+        token_address: Optional token address to filter transactions
+        from_time: Optional datetime to get transactions after
         
-#         # Get the appropriate web3 provider based on chain
-#         w3 = get_web3_provider(chain)
+    Returns:
+        List of transaction dictionaries
+    """
+    logging.info(f"Getting recent transactions for wallet {wallet_address}")
+    
+    try:
+        # Initialize Web3 connection
+        w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER_URI))
         
-#         # Get wallet balance
-#         balance = w3.eth.get_balance(wallet_address)
-#         balance_eth = w3.from_wei(balance, 'ether')
+        # Normalize addresses
+        wallet_address = w3.to_checksum_address(wallet_address)
+        if token_address:
+            token_address = w3.to_checksum_address(token_address)
         
-#         # Simulate token holdings and other data
-#         return {
-#             "address": wallet_address,
-#             "balance_eth": balance_eth,
-#             "first_transaction": "2021-05-12",
-#             "last_transaction": "2023-09-28",
-#             "total_transactions": 156,
-#             "chain": chain,  # Include the chain in the response
-#             "token_holdings": [
-#                 {"token_address": f"0x{i}token{wallet_address[-4:]}", "symbol": f"TKN{i}", "amount": i * 1000, "value_usd": i * 1000 * 0.5}
-#                 for i in range(1, 6)
-#             ],
-#             "deployed_tokens": [
-#                 {"address": f"0x{i}deployed{wallet_address[-4:]}", "name": f"Token {i}", "symbol": f"TKN{i}", "deploy_date": f"2022-{i}-15", "success_rate": 70 + i * 5}
-#                 for i in range(1, 4)
-#             ],
-#             "win_rate": 68,
-#             "total_profit": 15600
-#         }
-#     except Exception as e:
-#         logging.error(f"Error getting wallet info on {chain}: {e}")
-#         return None
+        # In a real implementation, you would:
+        # 1. Query blockchain or indexer API for transactions
+        # 2. Filter by token_address if provided
+        # 3. Filter by timestamp if from_time is provided
+        
+        # For now, return mock data
+        mock_transactions = []
+        
+        # Mock a token transfer transaction
+        mock_token_tx = {
+            'hash': f"0x{wallet_address[2:10]}000000000000000000000000",
+            'from': wallet_address,
+            'to': "0x1234567890123456789012345678901234567890",
+            'value': 0,  # ETH value is 0 for token transfers
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'is_token_transfer': True,
+            'token_address': token_address or "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  # USDC if none provided
+            'token_symbol': "USDC",
+            'amount': 1000.0,
+            'value_usd': 1000.0,
+            'is_buy': True
+        }
+        mock_transactions.append(mock_token_tx)
+        
+        # Mock a contract creation transaction
+        mock_contract_tx = {
+            'hash': f"0x{wallet_address[2:10]}111111111111111111111111",
+            'from': wallet_address,
+            'to': None,  # Contract creation has no 'to' address
+            'value': 0,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'is_contract_creation': True,
+            'contract_address': "0x9876543210987654321098765432109876543210",
+            'contract_type': "ERC20"
+        }
+        mock_transactions.append(mock_contract_tx)
+        
+        # Filter by time if needed
+        if from_time:
+            # In a real implementation, you would filter by timestamp
+            pass
+        
+        return mock_transactions
+        
+    except Exception as e:
+        logging.error(f"Error getting recent transactions: {e}")
+        return []
 
-# async def get_first_buyers(token_address: str, chain:str ='eth') -> List[Dict[str, Any]]:
-#     """Get the first buyers of a token"""
-#     if not await is_valid_token_contract(token_address, chain):
-#         return []
+def is_token_transfer(tx: Dict[str, Any]) -> bool:
+    """
+    Check if a transaction is a token transfer
     
-#     try:
-#         # This would be replaced with actual blockchain query
-#         # For now, we'll simulate the data
-#         return [
-#             {"address": f"0x{i}buyer{token_address[-4:]}", "amount": i * 1000, "time": f"2023-09-{10+i} 14:{i*5}:00"}
-#             for i in range(1, 51)
-#         ]
-#     except Exception as e:
-#         logging.error(f"Error getting first buyers: {e}")
-#         return []
+    Args:
+        tx: Transaction dictionary
+        
+    Returns:
+        True if the transaction is a token transfer, False otherwise
+    """
+    # In a real implementation, you would:
+    # 1. Check if the transaction has token transfer event logs
+    # 2. Look for ERC20 Transfer events
+    
+    # For now, use a simple flag in our mock data
+    return tx.get('is_token_transfer', False)
 
-# async def get_token_holders(token_address: str, chain:str ='eth') -> List[Dict[str, Any]]:
-#     """Get the top holders of a token"""
-#     if not await is_valid_token_contract(token_address, chain):
-#         return []
+def is_contract_creation(tx: Dict[str, Any]) -> bool:
+    """
+    Check if a transaction is a contract creation
     
-#     try:
-#         # This would be replaced with actual blockchain query
-#         # For now, we'll simulate the data
-#         token_info = await get_token_info(token_address)
-#         if not token_info:
-#             return []
+    Args:
+        tx: Transaction dictionary
         
-#         total_supply = token_info.get("total_supply", 1000000)
-        
-#         holders = []
-#         remaining_percentage = 100
-        
-#         # Generate top holders with decreasing percentages
-#         for i in range(1, 21):
-#             if i <= 3:
-#                 percentage = round(remaining_percentage * (0.2 - (i-1)*0.05), 2)
-#             elif i <= 10:
-#                 percentage = round(remaining_percentage * (0.05 - (i-4)*0.005), 2)
-#             else:
-#                 percentage = round(remaining_percentage * 0.01, 2)
+    Returns:
+        True if the transaction is a contract creation, False otherwise
+    """
+    # In a real implementation, you would:
+    # 1. Check if 'to' is None or empty
+    # 2. Verify that a contract address was created
+    
+    # For now, use a simple flag in our mock data
+    return tx.get('is_contract_creation', False)
+
+# Keep track of processed transactions to avoid duplicate notifications
+processed_txs = set()
+
+async def start_blockchain_monitor():
+    """Start the blockchain monitor as a background task"""
+    logging.info("Starting blockchain monitor...")
+    asyncio.create_task(monitor_blockchain_events())
+
+async def monitor_blockchain_events():
+    """Background task to monitor blockchain events and send notifications"""
+    logging.info("Blockchain monitor running")
+    
+    # Keep track of processed transactions to avoid duplicate notifications
+    processed_txs = set()
+    
+    while True:
+        try:
+            # Get all active tracking subscriptions
+            subscriptions = get_all_active_tracking_subscriptions()
             
-#             remaining_percentage -= percentage
-#             amount = total_supply * (percentage / 100)
-#             value = amount * token_info.get("current_price", 0.001)
+            if not subscriptions:
+                # No active subscriptions, sleep and check again later
+                await asyncio.sleep(60)
+                continue
             
-#             holders.append({
-#                 "address": f"0x{i}holder{token_address[-4:]}",
-#                 "amount": amount,
-#                 "percentage": percentage,
-#                 "value": round(value, 2)
-#             })
-        
-#         return holders
-#     except Exception as e:
-#         logging.error(f"Error getting token holders: {e}")
-#         return []
-
-
-# async def get_wallet_holding_time(wallet_address: str, token_address: str) -> Optional[Dict[str, Any]]:
-#     """Get information about how long a wallet holds a specific token"""
-#     if not await is_valid_address(wallet_address) or not await is_valid_address(token_address):
-#         return None
-    
-#     try:
-#         # This would be replaced with actual blockchain query
-#         # For now, we'll simulate the data
-#         return {
-#             "wallet_address": wallet_address,
-#             "token_address": token_address,
-#             "avg_holding_time": "3.5 days",
-#             "longest_hold": "12 days",
-#             "shortest_hold": "4 hours",
-#             "total_trades": 8,
-#             "buy_sell_ratio": "1.5:1"
-#         }
-#     except Exception as e:
-#         logging.error(f"Error getting wallet holding time: {e}")
-#         return None
+            # Group subscriptions by address for efficient querying
+            tracked_wallets = {}
+            tracked_tokens = {}
+            
+            for sub in subscriptions:
+                if sub.tracking_type in ["wallet_trades", "token_deployments"]:
+                    if sub.target_address not in tracked_wallets:
+                        tracked_wallets[sub.target_address] = []
+                    tracked_wallets[sub.target_address].append(sub)
+                elif sub.tracking_type == "token_profitable_wallets":
+                    if sub.target_address not in tracked_tokens:
+                        tracked_tokens[sub.target_address] = []
+                    tracked_tokens[sub.target_address].append(sub)
+            
+            # Check for new transactions for tracked wallets
+            for wallet_address, subs in tracked_wallets.items():
+                # Get transactions from the last 10 minutes
+                recent_txs = await get_recent_transactions(
+                    wallet_address, 
+                    from_time=datetime.now() - timedelta(minutes=10)
+                )
+                
+                for tx in recent_txs:
+                    # Skip already processed transactions
+                    tx_hash = tx.get('hash')
+                    if tx_hash in processed_txs:
+                        continue
+                    
+                    # Mark as processed
+                    processed_txs.add(tx_hash)
+                    
+                    # Process each transaction
+                    if is_token_transfer(tx):
+                        # Notify users tracking wallet trades
+                        for sub in subs:
+                            if sub.tracking_type == "wallet_trades":
+                                token_info = await get_token_info(tx['token_address'])
+                                tx['token_name'] = token_info.get('symbol', 'Unknown Token')
+                                
+                                message = format_wallet_activity_notification(
+                                    wallet_address=wallet_address,
+                                    tx_data=tx
+                                )
+                                
+                                await send_tracking_notification(sub.user_id, message)
+                    
+                    elif is_contract_creation(tx):
+                        # Notify users tracking token deployments
+                        for sub in subs:
+                            if sub.tracking_type == "token_deployments":
+                                message = format_token_deployment_notification(
+                                    deployer_address=wallet_address,
+                                    contract_address=tx['contract_address'],
+                                    timestamp=tx['timestamp']
+                                )
+                                
+                                await send_tracking_notification(sub.user_id, message)
+            
+            # Check for transactions involving tracked tokens
+            for token_address, subs in tracked_tokens.items():
+                # Get profitable wallets for this token
+                profitable_wallets = await get_token_profitable_wallets(token_address)
+                
+                # Get token info once for all notifications
+                token_info = await get_token_info(token_address)
+                token_name = token_info.get('symbol', 'Unknown Token')
+                
+                # Check for recent transactions by these wallets
+                for wallet in profitable_wallets:
+                    wallet_address = wallet['address']
+                    
+                    # Get transactions involving this token from the last 10 minutes
+                    recent_txs = await get_recent_transactions(
+                        wallet_address=wallet_address,
+                        token_address=token_address,
+                        from_time=datetime.now() - timedelta(minutes=10)
+                    )
+                    
+                    for tx in recent_txs:
+                        # Skip already processed transactions
+                        tx_hash = tx.get('hash')
+                        if tx_hash in processed_txs:
+                            continue
+                        
+                        # Mark as processed
+                        processed_txs.add(tx_hash)
+                        
+                        # Notify users tracking profitable wallets
+                        for sub in subs:
+                            message = format_profitable_wallet_notification(
+                                wallet_address=wallet_address,
+                                token_name=token_name,
+                                tx_data=tx
+                            )
+                            
+                            await send_tracking_notification(sub.user_id, message)
+            
+            # Limit the size of processed_txs to prevent memory issues
+            if len(processed_txs) > 10000:
+                # Keep only the 5000 most recent transactions
+                processed_txs_list = list(processed_txs)
+                processed_txs = set(processed_txs_list[-5000:])
+            
+            # Sleep before next check
+            await asyncio.sleep(60)  # Check every minute
+            
+        except Exception as e:
+            logging.error(f"Error in blockchain monitor: {e}")
+            # Sleep before retrying
+            await asyncio.sleep(60)

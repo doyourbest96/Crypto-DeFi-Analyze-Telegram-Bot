@@ -89,6 +89,20 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         days = int(callback_data.replace("kol_period_", ""))
         context.user_data["selected_period"] = days
         await handle_kol_period_selection(update, context)
+    elif callback_data == "view_tracking_subscriptions":
+        await handle_view_tracking_subscriptions(update, context)
+    elif callback_data == "manage_wallet_tracking":
+        await handle_manage_wallet_tracking(update, context)
+    elif callback_data == "manage_deployment_tracking":
+        await handle_manage_deployment_tracking(update, context)
+    elif callback_data == "manage_token_tracking":
+        await handle_manage_token_tracking(update, context)
+    elif callback_data.startswith("remove_tracking_"):
+        target_address = callback_data.replace("remove_tracking_", "")
+        await handle_remove_tracking(update, context, target_address)
+
+
+
 
     
 
@@ -128,54 +142,54 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         
 
 
-    elif callback_data == "track_wallet_trades":
-        await handle_track_wallet_trades(update, context)
-    elif callback_data == "track_wallet_deployments":
-        await handle_track_wallet_deployments(update, context)
-    elif callback_data == "track_whale_sales":
-        await handle_track_whale_sales(update, context)
-    elif callback_data == "more_kols":
-        await handle_more_kols(update, context)
-    elif callback_data.startswith("export_td_"):
-        wallet_address = callback_data.replace("export_td_", "")
-        await handle_export_td(update, context, wallet_address)
-    elif callback_data.startswith("export_th_"):
-        token_address = callback_data.replace("export_th_", "")
-        await handle_export_th(update, context, token_address)
-    elif callback_data == "export_pw":
-        await handle_export_pw(update, context)
-    elif callback_data == "export_hnw":
-        await handle_export_hnw(update, context)
-    elif callback_data.startswith("track_deployer_"):
-        deployer_address = callback_data.replace("track_deployer_", "")
-        await handle_track_deployer(update, context, deployer_address)
-    elif callback_data == "track_top_wallets":
-        await handle_track_top_wallets(update, context)
-    elif callback_data == "track_hnw_wallets":
-        await handle_track_hnw_wallets(update, context)
-    # elif callback_data.startswith("th_"):
-    #     token_address = callback_data.replace("th_", "")
-    #     await handle_th(update, context, token_address)
-    # elif callback_data.startswith("dw_"):
-    #     token_address = callback_data.replace("dw_", "")
-    #     await handle_dw(update, context, token_address)
-    # elif callback_data.startswith("track_token_"):
-    #     token_address = callback_data.replace("track_token_", "")
-    #     await handle_track_token(update, context, token_address)
-    elif callback_data.startswith("track_wallet_"):
-        wallet_address = callback_data.replace("track_wallet_", "")
-        await handle_track_wallet(update, context, wallet_address)
-    elif callback_data.startswith("trading_history_"):
-        wallet_address = callback_data.replace("trading_history_", "")
-        await handle_trading_history(update, context, wallet_address)
-    elif callback_data.startswith("more_history_"):
-        wallet_address = callback_data.replace("more_history_", "")
-        await handle_more_history(update, context, wallet_address)
-    elif callback_data.startswith("export_ptd"):
-        await handle_export_ptd(update, context)
-    elif callback_data.startswith("export_mpw_"):
-        token_address = callback_data.replace("export_mpw_", "")
-        await handle_export_mpw(update, context, token_address)
+    # elif callback_data == "track_wallet_trades":
+    #     await handle_track_wallet_trades(update, context)
+    # elif callback_data == "track_wallet_deployments":
+    #     await handle_track_wallet_deployments(update, context)
+    # elif callback_data == "track_whale_sales":
+    #     await handle_track_whale_sales(update, context)
+    # elif callback_data == "more_kols":
+    #     await handle_more_kols(update, context)
+    # elif callback_data.startswith("export_td_"):
+    #     wallet_address = callback_data.replace("export_td_", "")
+    #     await handle_export_td(update, context, wallet_address)
+    # elif callback_data.startswith("export_th_"):
+    #     token_address = callback_data.replace("export_th_", "")
+    #     await handle_export_th(update, context, token_address)
+    # elif callback_data == "export_pw":
+    #     await handle_export_pw(update, context)
+    # elif callback_data == "export_hnw":
+    #     await handle_export_hnw(update, context)
+    # elif callback_data.startswith("track_deployer_"):
+    #     deployer_address = callback_data.replace("track_deployer_", "")
+    #     await handle_track_deployer(update, context, deployer_address)
+    # elif callback_data == "track_top_wallets":
+    #     await handle_track_top_wallets(update, context)
+    # elif callback_data == "track_hnw_wallets":
+    #     await handle_track_hnw_wallets(update, context)
+    # # elif callback_data.startswith("th_"):
+    # #     token_address = callback_data.replace("th_", "")
+    # #     await handle_th(update, context, token_address)
+    # # elif callback_data.startswith("dw_"):
+    # #     token_address = callback_data.replace("dw_", "")
+    # #     await handle_dw(update, context, token_address)
+    # # elif callback_data.startswith("track_token_"):
+    # #     token_address = callback_data.replace("track_token_", "")
+    # #     await handle_track_token(update, context, token_address)
+    # elif callback_data.startswith("track_wallet_"):
+    #     wallet_address = callback_data.replace("track_wallet_", "")
+    #     await handle_track_wallet(update, context, wallet_address)
+    # elif callback_data.startswith("trading_history_"):
+    #     wallet_address = callback_data.replace("trading_history_", "")
+    #     await handle_trading_history(update, context, wallet_address)
+    # elif callback_data.startswith("more_history_"):
+    #     wallet_address = callback_data.replace("more_history_", "")
+    #     await handle_more_history(update, context, wallet_address)
+    # elif callback_data.startswith("export_ptd"):
+    #     await handle_export_ptd(update, context)
+    # elif callback_data.startswith("export_mpw_"):
+    #     token_address = callback_data.replace("export_mpw_", "")
+    #     await handle_export_mpw(update, context, token_address)
     else:
         await query.answer(
             "Sorry, I couldn't process that request. Please try again.", show_alert=True
@@ -734,7 +748,20 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             processing_message_text="🔍 Analyzing tokens deployed by this wallet... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the tokens deployed. Please try again later.",
             no_data_message_text="❌ Could not find any tokens deployed by this wallet."
-        ) 
+        )
+
+    # Add these cases to the handle_expected_input function
+    elif expecting == "track_wallet_buy_sell_address":
+        wallet_address = update.message.text.strip()
+        await handle_tracking_input(update, context, "wallet_trades", wallet_address)
+
+    elif expecting == "track_new_token_deploy_address":
+        wallet_address = update.message.text.strip()
+        await handle_tracking_input(update, context, "token_deployments", wallet_address)
+
+    elif expecting == "track_profitable_wallets_token":
+        token_address = update.message.text.strip()
+        await handle_tracking_input(update, context, "token_profitable_wallets", token_address)
 
 # help handlers
 async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1276,6 +1303,7 @@ async def handle_tracking_and_monitoring(update:Update, context:ContextTypes.DEF
         [InlineKeyboardButton("📥 Track Buy/Sell Activity (Premium)", callback_data="track_wallet_buy_sell")],
         [InlineKeyboardButton("🧬 Track Token Deployments (Premium)", callback_data="track_new_token_deploy")],
         [InlineKeyboardButton("📊 Profitable Wallets of a token(Premium)", callback_data="track_profitable_wallets")],
+        [InlineKeyboardButton("👁️ View Active Tracking", callback_data="view_tracking_subscriptions")],
         [
             InlineKeyboardButton("❓ Help", callback_data="tracking_and_monitoring_help"),
             InlineKeyboardButton("🔙 Back", callback_data="back")
@@ -1995,21 +2023,30 @@ async def handle_track_new_token_deploy(update: Update, context: ContextTypes.DE
         
         await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking new token deployments is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "🧬 <b>Track Token Deployments</b> lets you monitor when a specific wallet deploys new tokens or connects to newly deployed contracts. Essential for following prolific developers, tracking project teams, or getting early on new launches! 🚀🔭\n\n"
+            "🚫 This feature is currently available only for <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> and unlock full access to:\n"
+            "• Instant new token deployment alerts 🔔\n"
+            "• Track multiple deployer wallets 👥\n"
+            "• Get token contract details and initial parameters 📝\n"
+            "• Be first to discover new projects 🥇\n\n"
+            "🔓 Tap into the full power of Crypto DeFi Analyze with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
+    
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    
     # Prompt user to enter wallet address
     await query.message.reply_text(
+        "🧬 <b>Track Token Deployments</b>\n\n"
         "Please send me the wallet address you want to track for new token deployments.\n\n"
         "Example: `0x1234...abcd`\n\n"
-        "You'll receive notifications when this wallet deploys new tokens.",
+        "You'll receive notifications when this wallet deploys new tokens or connects to newly deployed contracts.",
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
     
     # Set conversation state to expect wallet address for tracking
@@ -2030,8 +2067,14 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
         
         await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking profitable wallets is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "📊 <b>Track Profitable Wallets</b> identifies and monitors the most successful wallets trading a specific token. Perfect for finding winning strategies, spotting smart money, and learning from top traders! 💸📈\n\n"
+            "🚫 This feature is currently available only for <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> and unlock full access to:\n"
+            "• Detailed PNL and win rate metrics 📊\n"
+            "• Trade volume and position size analysis 💰\n"
+            "• Track multiple tokens' profitable wallets 🔄\n"
+            "• Get alerts on significant profitable wallet movements 🚨\n\n"
+            "🔓 Tap into the full power of Crypto DeFi Analyze with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -2039,45 +2082,159 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
     
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Prompt user to enter token address
+    await query.message.reply_text(
+        "📊 <b>Track Profitable Wallets</b>\n\n"
+        "Please send me the token contract address to track its most profitable wallets.\n\n"
+        "Example: `0x1234...abcd`\n\n"
+        "You'll receive detailed analysis of the most profitable wallets trading this token.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Set conversation state to expect token address for tracking
+    context.user_data["expecting"] = "track_profitable_wallets_token"
+
+
+async def handle_tracking_input(update: Update, context: ContextTypes.DEFAULT_TYPE, tracking_type: str, target_address: str) -> None:
+    """
+    Handle tracking input from users
+    
+    Args:
+        update: The update object
+        context: The context object
+        tracking_type: Type of tracking (wallet_trades, token_deployments, token_profitable_wallets)
+        target_address: Address to track (wallet or token)
+    """
+    # Get user from database
+    user = get_user(update.effective_user.id)
+    
+    # Validate address format
+    if not await is_valid_address(target_address):
+        address_type = "token" if tracking_type == "token_profitable_wallets" else "wallet"
+        await update.message.reply_text(
+            f"❌ <b>Invalid {address_type.capitalize()} Address</b>\n\n"
+            f"Please provide a valid Ethereum {address_type} address starting with 0x and containing 42 characters.",
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Handle token profitable wallets tracking differently
+    if tracking_type == "token_profitable_wallets":
+        await handle_profitable_wallets_tracking(update, context, user, target_address)
+        return
+    
+    # Create tracking subscription
+    subscription = TrackingSubscription(
+        user_id=user.user_id,
+        tracking_type=tracking_type,
+        target_address=target_address,
+        is_active=True,
+        created_at=datetime.now()
+    )
+    
+    # Save subscription
+    save_tracking_subscription(subscription)
+    
+    # Prepare confirmation message
+    tracking_type_display = {
+        "wallet_trades": "buy/sell activity",
+        "token_deployments": "token deployments"
+    }
+    
+    display_type = tracking_type_display.get(tracking_type, tracking_type)
+    
+    # Confirm to user
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        f"✅ <b>Tracking Set Up Successfully!</b>\n\n"
+        f"Now tracking {display_type} for wallet:\n"
+        f"`{target_address[:6]}...{target_address[-4:]}`\n\n"
+        f"You will receive notifications when this wallet makes significant trades or deploys new tokens.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_profitable_wallets_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, token_address: str) -> None:
+    """
+    Handle tracking profitable wallets for a token
+    
+    Args:
+        update: The update object
+        context: The context object
+        user: User object
+        token_address: Token address to track
+    """
     # Send processing message
-    processing_message = await query.message.reply_text(
-        "🔍 Finding most profitable wallets to track... This may take a moment."
+    processing_message = await update.message.reply_text(
+        "🔍 Finding profitable wallets for this token... This may take a moment."
     )
     
     try:
-        # Get profitable wallets (last 30 days, top 5)
-        profitable_wallets = await get_profitable_wallets(30, 5)
+        # Get token info
+        token_info = await get_token_info(token_address)
         
-        if not profitable_wallets:
+        if not token_info:
             await processing_message.edit_text(
-                "❌ Could not find profitable wallets to track at this time."
+                "❌ Could not find information for this token. Please check the address and try again."
             )
             return
         
+        # Get profitable wallets for this token
+        profitable_wallets = await get_token_profitable_wallets(token_address, limit=5)
+        
+        if not profitable_wallets:
+            await processing_message.edit_text(
+                "❌ Could not find profitable wallets for this token at this time."
+            )
+            return
+        
+        # Create tracking subscription for the token
+        token_subscription = TrackingSubscription(
+            user_id=user.user_id,
+            tracking_type="token_profitable_wallets",
+            target_address=token_address,
+            is_active=True,
+            created_at=datetime.now()
+        )
+        
+        # Save token subscription
+        save_tracking_subscription(token_subscription)
+        
+        # Also track the top profitable wallets individually
         for wallet in profitable_wallets:
-            subscription = TrackingSubscription(
+            wallet_subscription = TrackingSubscription(
                 user_id=user.user_id,
-                tracking_type="wallet",
+                tracking_type="wallet_trades",
                 target_address=wallet["address"],
                 is_active=True,
                 created_at=datetime.now()
             )
-            save_tracking_subscription(subscription)
+            save_tracking_subscription(wallet_subscription)
         
         # Format the response
-        response = f"✅ <b>Now tracking top 5 profitable wallets:</b>\n\n"
+        response = (
+            f"✅ <b>Tracking Set Up Successfully!</b>\n\n"
+            f"Now tracking profitable wallets for token:\n"
+            f"<b>{token_info.get('name', 'Unknown')}</b> ({token_info.get('symbol', 'N/A')})\n"
+            f"`{token_address[:6]}...{token_address[-4:]}`\n\n"
+            f"<b>Top 5 Profitable Wallets Being Tracked:</b>\n"
+        )
         
         for i, wallet in enumerate(profitable_wallets[:5], 1):
             response += (
                 f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-                f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n"
-                f"   Profit: ${wallet.get('total_profit', 'N/A')}\n\n"
+                f"   Profit: ${wallet.get('total_profit', 'N/A'):,.2f}\n"
+                f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n\n"
             )
         
-        response += "You will receive notifications when these wallets make significant trades."
+        response += "You will receive notifications when these wallets make significant trades with this token."
         
         # Add button to go back
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await processing_message.edit_text(
@@ -2087,10 +2244,270 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
         )
     
     except Exception as e:
-        logging.error(f"Error in handle_track_profitable_wallets: {e}")
+        logging.error(f"Error in handle_profitable_wallets_tracking: {e}")
         await processing_message.edit_text(
             "❌ An error occurred while setting up tracking. Please try again later."
         )
+
+async def handle_view_tracking_subscriptions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle view tracking subscriptions button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Get user's tracking subscriptions
+    subscriptions = get_user_tracking_subscriptions(user.user_id)
+    
+    if not subscriptions:
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "📭 <b>No Active Tracking Subscriptions</b>\n\n"
+            "You don't have any active tracking subscriptions at the moment.\n\n"
+            "Use the Tracking & Monitoring menu to set up tracking for wallets, token deployments, or profitable wallets.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Group subscriptions by type
+    wallet_trades = [sub for sub in subscriptions if sub.tracking_type == "wallet_trades"]
+    token_deployments = [sub for sub in subscriptions if sub.tracking_type == "token_deployments"]
+    token_profitable_wallets = [sub for sub in subscriptions if sub.tracking_type == "token_profitable_wallets"]
+    
+    # Format the response
+    response = (
+        f"🔔 <b>Your Active Tracking Subscriptions</b>\n\n"
+        f"Here’s a detailed overview of the wallets and activities you're currently monitoring using DeFi-Scope’s tracking system.\n"
+        f"Below is a breakdown of your active subscriptions categorized by type:\n\n"
+    )
+
+    if wallet_trades:
+        response += (
+            f"📥 <b>Wallet Buy/Sell Activity Subscriptions ({len(wallet_trades)}):</b>\n"
+            f"You're currently tracking buy and sell activities for the following wallets. Whenever any of these wallets perform a trade, you'll receive real-time alerts to stay informed and ahead of the curve:\n"
+        )
+        for i, sub in enumerate(wallet_trades[:3], 1):
+            response += f"{i}. `{sub.target_address[:6]}...{sub.target_address[-4:]}`\n"
+        if len(wallet_trades) > 3:
+            response += f"   ...and <b>{len(wallet_trades) - 3}</b> more wallets are being tracked.\n"
+        response += "\n"
+
+    if token_deployments:
+        response += (
+            f"🧬 <b>Token Deployment Trackers ({len(token_deployments)}):</b>\n"
+            f"These are the wallets you're monitoring for new token deployments. You'll be instantly notified when these addresses create new tokens, helping you catch early launches and analyze dev activity:\n"
+        )
+        for i, sub in enumerate(token_deployments[:3], 1):
+            response += f"{i}. `{sub.target_address[:6]}...{sub.target_address[-4:]}`\n"
+        if len(token_deployments) > 3:
+            response += f"   ...and <b>{len(token_deployments) - 3}</b> more wallets are under watch.\n"
+        response += "\n"
+
+    if token_profitable_wallets:
+        response += (
+            f"📊 <b>Profitable Wallets Tracking ({len(token_profitable_wallets)}):</b>\n"
+            f"You're currently tracking tokens to monitor which wallets are earning the most profits. This helps you identify smart money, trends in trading behavior, and potentially profitable plays:\n"
+        )
+        for i, sub in enumerate(token_profitable_wallets[:3], 1):
+            token_info = await get_token_info(sub.target_address)
+            token_name = token_info.get('symbol', 'Unknown') if token_info else 'Unknown'
+            response += f"{i}. {token_name}: `{sub.target_address[:6]}...{sub.target_address[-4:]}`\n"
+        if len(token_profitable_wallets) > 3:
+            response += f"   ...and <b>{len(token_profitable_wallets) - 3}</b> more token contracts are actively being tracked.\n"
+        response += "\n"
+
+    
+    # Add buttons to manage subscriptions
+    keyboard = [
+        [InlineKeyboardButton("🔍 Manage Wallet Traching for Buy/Sell Activity", callback_data="manage_wallet_tracking")],
+        [InlineKeyboardButton("🧬 Manage Tracking for Token Deployment of a wallet", callback_data="manage_deployment_tracking")],
+        [InlineKeyboardButton("📊 Manage Tracking for Profitable Wallets of a token", callback_data="manage_token_tracking")],
+        [InlineKeyboardButton("🔙 Back", callback_data="tracking_and_monitoring")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        response,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_manage_wallet_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle manage wallet tracking button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Get user's tracking subscriptions
+    subscriptions = get_user_tracking_subscriptions(user.user_id)
+    
+    # Filter subscriptions by type
+    wallet_subscriptions = [sub for sub in subscriptions if sub.tracking_type == "wallet_trades"]
+    
+    if not wallet_subscriptions:
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "📭 <b>No Wallet Tracking Subscriptions</b>\n\n"
+            "You don't have any active wallet tracking subscriptions at the moment.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Format the response
+    response = f"📥 <b>Manage Wallet Tracking for buy/sell activities</b>\n\n"
+    response += (
+        f"You're currently tracking several wallets for buy and sell activities.\n"
+        f"Below is the list of tracked wallets. If you wish to stop receiving alerts for any of them, simply select the wallet you'd like to remove:\n\n"
+    )
+
+    # Create keyboard with buttons to remove each subscription
+    keyboard = []
+    for i, sub in enumerate(wallet_subscriptions, 1):
+        response += (
+            f"{i}. `{sub.target_address[:6]}...{sub.target_address[-4:]}` — "
+            f"Click the button below to stop tracking this wallet.\n"
+        )
+        keyboard.append([InlineKeyboardButton(
+            f"❌ Remove #{i}", callback_data=f"remove_tracking_{sub.target_address}"
+        )])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        response,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_manage_deployment_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle manage deployment tracking button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Get user's tracking subscriptions
+    subscriptions = get_user_tracking_subscriptions(user.user_id)
+    
+    # Filter subscriptions by type
+    deployment_subscriptions = [sub for sub in subscriptions if sub.tracking_type == "token_deployments"]
+    
+    if not deployment_subscriptions:
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "📭 <b>No Deployment Tracking Subscriptions</b>\n\n"
+            "You don't have any active token deployment tracking subscriptions at the moment.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Format the response
+    response = f"🧬 <b>Manage Token Deployment Tracking</b>\n\n"
+    response += f"Select a wallet to remove from Token deployment tracking:\n\n"
+    
+    # Create keyboard with buttons to remove each subscription
+    keyboard = []
+    for i, sub in enumerate(deployment_subscriptions, 1):
+        response += f"{i}. `{sub.target_address[:6]}...{sub.target_address[-4:]}`\n"
+        keyboard.append([InlineKeyboardButton(
+            f"Remove #{i}", callback_data=f"remove_tracking_{sub.target_address}"
+        )])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        response,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_manage_token_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle manage token tracking button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Get user's tracking subscriptions
+    subscriptions = get_user_tracking_subscriptions(user.user_id)
+    
+    # Filter subscriptions by type
+    token_subscriptions = [sub for sub in subscriptions if sub.tracking_type == "token_profitable_wallets"]
+    
+    if not token_subscriptions:
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "📭 <b>No Token Tracking Subscriptions</b>\n\n"
+            "You don't have any active token profitable wallets tracking subscriptions at the moment.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Format the response
+    response = f"📊 <b>Manage Tracking for Profitable Wallets of a Token</b>\n\n"
+    response += f"Select a token to remove from profitable wallets tracking:\n\n"
+    
+    # Create keyboard with buttons to remove each subscription
+    keyboard = []
+    for i, sub in enumerate(token_subscriptions, 1):
+        # Get token info
+        token_info = await get_token_info(sub.target_address)
+        token_name = f"{token_info.get('name', 'Unknown')} ({token_info.get('symbol', 'N/A')})" if token_info else 'Unknown Token'
+        
+        response += f"{i}. {token_name}\n   `{sub.target_address[:6]}...{sub.target_address[-4:]}`\n"
+        keyboard.append([InlineKeyboardButton(
+            f"Remove #{i}", callback_data=f"remove_tracking_{sub.id}"
+        )])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Back", callback_data="view_tracking_subscriptions")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        response,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
+async def handle_remove_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE, target_address: str) -> None:
+    """
+    Handle remove tracking button callback
+    
+    This function removes all tracking subscriptions for the given target address.
+    """
+    query = update.callback_query
+    user = await check_callback_user(update)
+        
+    try:
+        # Get all user's tracking subscriptions
+        subscriptions = get_user_tracking_subscriptions(user.user_id)
+        
+        # Filter subscriptions for the target address
+        matching_subs = [sub for sub in subscriptions if sub.target_address.lower() == target_address.lower()]
+        
+        if not matching_subs:
+            await query.answer("No matching tracking subscription found.", show_alert=True)
+            return
+        
+        # Delete each matching subscription
+        for sub in matching_subs:
+            delete_tracking_subscription(user.user_id, sub.tracking_type, sub.target_address)
+        
+        await query.answer("Tracking subscription(s) removed successfully!")
+        
+        # Redirect back to view tracking subscriptions
+        await handle_view_tracking_subscriptions(update, context)
+            
+    except Exception as e:
+        logging.error(f"Error removing tracking subscription: {e}")
+        await query.answer("Failed to remove tracking subscription. Please try again.", show_alert=True)
+
 
 # KOL wallets handlers
 async def handle_kol_wallet_profitability(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
