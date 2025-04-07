@@ -636,17 +636,19 @@ def format_wallet_holding_duration_response(data: dict, wallet_address: str) -> 
     """
     response = (
         f"⏳ <b>Wallet Holding Duration Analysis</b>\n\n"
-        f"Wallet: `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
-        f"Chain: {data.get('chain', 'ETH').upper()}\n\n"
-        f"<b>Average Holding Time:</b> {data.get('avg_holding_time_days', 'N/A')} days\n"
-        f"<b>Tokens Analyzed:</b> {data.get('tokens_analyzed', 'N/A')}\n\n"
-        f"<b>Holding Distribution:</b>\n"
-        f"• Less than 1 day: {data['holding_distribution'].get('less_than_1_day', 'N/A')}%\n"
-        f"• 1-7 days: {data['holding_distribution'].get('1_to_7_days', 'N/A')}%\n"
-        f"• 7-30 days: {data['holding_distribution'].get('7_to_30_days', 'N/A')}%\n"
-        f"• More than 30 days: {data['holding_distribution'].get('more_than_30_days', 'N/A')}%\n\n"
-        f"<b>Example Tokens:</b>\n"
+        f"👛 <b>Wallet:</b> `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
+        f"🌐 <b>Chain:</b> {data.get('chain', 'ETH').upper()}\n\n"
+        f"📊 <b>Average Holding Time:</b> {data.get('avg_holding_time_days', 'N/A')} days\n"
+        f"🔎 <b>Tokens Analyzed:</b> {data.get('tokens_analyzed', 'N/A')}\n\n"
+        f"📈 <b>Holding Duration Distribution:</b>\n"
+        f"• ⏱️ Less than 1 day: {data['holding_distribution'].get('less_than_1_day', 'N/A')}%\n"
+        f"• 📅 1 to 7 days: {data['holding_distribution'].get('1_to_7_days', 'N/A')}%\n"
+        f"• 🗓️ 7 to 30 days: {data['holding_distribution'].get('7_to_30_days', 'N/A')}%\n"
+        f"• 🏦 More than 30 days: {data['holding_distribution'].get('more_than_30_days', 'N/A')}%\n\n"
+        f"🔬 <b>Tokens Held:</b>\n"
+        f"These are the actual tokens this wallet has interacted with, providing a clear snapshot of its on-chain behavior. 🚀🔍\n\n"
     )
+
     
     # Add example tokens
     for i, token in enumerate(data.get('token_examples', [])[:5], 1):
@@ -678,8 +680,11 @@ def format_wallet_most_profitable_response(data: list, wallet_address: str = Non
     chain = first_wallet.get('chain', 'eth').upper()
     
     response = (
-        f"💰 <b>Most Profitable Wallets (Last {period_days} Days)</b>\n"
-        f"Chain: {chain}\n\n"
+        f"💰 <b>Most Profitable Wallets Over the Last {period_days} Days</b>\n"
+        f"🌐 Chain Analyzed: <b>{chain}</b>\n\n"
+        f"📈 Below is a list of the most profitable wallets based on their transaction activity and earnings during this period. "
+        f"These wallets have shown strong performance and smart trading behavior that contributed to significant gains. "
+        f"Dive into the details to see who's leading the profit charts! 🚀💼\n\n"
     )
     
     for i, wallet in enumerate(data[:10], 1):
@@ -712,8 +717,11 @@ def format_deployer_wallets_response(data: list, wallet_address: str = None) -> 
     
     response = (
         f"🧪 <b>Most Profitable Token Deployer Wallets (Last {period_days} Days)</b>\n"
-        f"Chain: {chain}\n\n"
-    )
+        f"🔗 Chain: <b>{chain}</b>\n\n"
+        f"🚀 These wallet addresses have been busy deploying tokens and cashing in big over the last {period_days} days. "
+        f"They’re not just developers — they’re trendsetters, launching tokens that gain traction fast! 💸📊\n\n"
+        f"🔥 Let’s take a closer look at the top-performing deployers who are making serious moves in the ecosystem.\n\n"
+    ) 
     
     for i, wallet in enumerate(data[:10], 1):
         response += (
@@ -742,9 +750,11 @@ def format_tokens_deployed_response(data: list, wallet_address: str) -> tuple:
     
     response = (
         f"🚀 <b>Tokens Deployed by Wallet</b>\n\n"
-        f"Deployer: `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
-        f"Chain: {chain}\n"
-        f"Total Tokens: {len(data)}\n\n"
+        f"👤 <b>Deployer:</b> `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
+        f"🌐 <b>Chain:</b> {chain}\n"
+        f"🧬 <b>Total Tokens Deployed:</b> {len(data)}\n\n"
+        f"🔍 This wallet has been actively creating tokens on {chain}, possibly experimenting, launching new projects, or fueling DeFi/NFT ecosystems. "
+        f"Whether it’s for innovation or hype, it’s clearly making moves! 💼📈\n\n"
     )
     
     for i, token in enumerate(data[:5], 1):
