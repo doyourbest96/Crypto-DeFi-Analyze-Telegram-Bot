@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from config import FREE_FIRST_BUYER_SCANS_DAILY, FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY, FREE_ATH_SCANS_DAILY, FREE_WALLET_MOST_PROFITABLE_TOKENS_IN_PERIOD_DAILY, FREE_WALLET_SCANS_DAILY
+from config import FREE_TOKEN_SCANS_DAILY, FREE_RESPONSE_DAILY, FREE_WALLET_SCANS_DAILY
 from data.database import (
     get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
     get_all_kol_wallets, get_user_tracking_subscriptions, get_user
@@ -1205,8 +1205,8 @@ async def handle_wallet_analysis(update:Update, context:ContextTypes.DEFAULT_TYP
     )
     wallet_tracking_keyboard = [
         [InlineKeyboardButton("💹 Most profitable wallets in specific period", callback_data="wallet_most_profitable_in_period")],
+        [InlineKeyboardButton("💰 Most profitable token deployer wallets in period", callback_data="most_profitable_token_deployer_wallet")],
         [InlineKeyboardButton("⏳ Wallet Holding Duration", callback_data="wallet_holding_duration")],
-        [InlineKeyboardButton("💰 Most profitable token deployer wallets", callback_data="most_profitable_token_deployer_wallet")],
         [InlineKeyboardButton("🚀 Tokens Deployed by Wallet (Premium)", callback_data="tokens_deployed_by_wallet")],
         [
             InlineKeyboardButton("❓ Help", callback_data="wallet_analysis_help"),
@@ -1311,7 +1311,7 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "first_buy_wallet_scan", FREE_FIRST_BUYER_SCANS_DAILY
+        user.user_id, "first_buy_wallet_scan", FREE_TOKEN_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1323,7 +1323,7 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_FIRST_BUYER_SCANS_DAILY}</b> free daily scans for <b>First Buyers Analysis</b>.\n"
+            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily scans for <b>First Buyers Analysis</b>.\n"
             f"This tool lets you discover who bought early, how much they earned, and their trading behavior. Great for identifying smart money moves! 💸\n\n"
             f"💎 <b>Upgrade to Premium</b> for unlimited scans and deeper DeFi intelligence:\n"
             f"• Analyze unlimited tokens 🔄\n"
@@ -1344,7 +1344,7 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY
+        user.user_id, "token_most_profitable_wallet_scan", FREE_TOKEN_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1356,7 +1356,7 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"📊 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY}</b> daily scans for <b>Most Profitable Wallets</b>.\n"
+            f"📊 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> daily scans for <b>Most Profitable Wallets</b>.\n"
             f"This feature helps you uncover top-performing wallets in any token — who's buying, who's profiting, and how much! 🧠💰\n\n"
             f"💎 <b>Premium users enjoy unlimited scans</b> and access to full profitability metrics:\n"
             f"• Unlimited wallet analysis 🔍\n"
@@ -1378,7 +1378,7 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     
     # Check if user has reached daily limit
     has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "ath_scan", FREE_ATH_SCANS_DAILY
+        user.user_id, "ath_scan", FREE_TOKEN_SCANS_DAILY
     )
     
     if has_reached_limit and not user.is_premium:
@@ -1390,8 +1390,8 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"🚫 You've used <b>{current_count}</b> out of <b>{FREE_ATH_SCANS_DAILY}</b> free daily token scans.\n"
-            f"Free users can analyze up to {FREE_ATH_SCANS_DAILY} tokens each day to explore market caps, trends, and ATH insights.\n\n"
+            f"🚫 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily token scans.\n"
+            f"Free users can analyze up to {FREE_TOKEN_SCANS_DAILY} tokens each day to explore market caps, trends, and ATH insights.\n\n"
             f"💎 <b>Premium users get unlimited scans</b> — no restrictions, no waiting!\n"
             f"Unlock powerful features like:\n"
             f"• Unlimited token & wallet scans 🔍\n"
@@ -1507,44 +1507,14 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
 # wallet analysis handlers
 async def handle_wallet_most_profitable_in_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle most profitable wallets in period button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
     
-    has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "wallet_most_profitable_in_period_scan", FREE_WALLET_MOST_PROFITABLE_TOKENS_IN_PERIOD_DAILY
+    await handle_period_selection(
+        update=update,
+        context=context,
+        feature_info="Most Profitable Wallets Analysis",
+        scan_type="wallet_most_profitable_in_period_scan",
+        callback_prefix="profitable_period"
     )
-
-    if has_reached_limit and not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.message.reply_text(
-            f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"📊 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_MOST_PROFITABLE_WALLETS_DAILY}</b> daily scans for <b>Most Profitable Wallets</b>.\n"
-            f"This feature helps you uncover top-performing wallets in any token — who's buying, who's profiting, and how much! 🧠💰\n\n"
-            f"💎 <b>Premium users enjoy unlimited scans</b> and access to full profitability metrics:\n"
-            f"• Unlimited wallet analysis 🔍\n"
-            f"• Identify winning traders and copy their strategy 📥\n"
-            f"• Gain edge over the market with real wallet data 🧩\n\n"
-            f"🚀 Ready to level up? <b>Unlock Premium now!</b>",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter parameters
-    await query.edit_message_text(
-        "Please send me the wallet address to analyze its token holding duration.\n\n"
-        "Example: `0x1234...abcd`\n\n"
-        "I'll analyze how long this wallet typically holds tokens before selling.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect parameters for profitable wallets
-    context.user_data["expecting"] = "wallet_most_profitable_params"
 
 async def handle_wallet_holding_duration(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle wallet holding duration button callback"""
@@ -1587,73 +1557,14 @@ async def handle_wallet_holding_duration(update: Update, context: ContextTypes.D
     await increment_scan_count(user.user_id, "wallet_scan")
 
 async def handle_most_profitable_token_deployer_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle most profitable token deployer wallets button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Most Profitable Token Deployer analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Send processing message
-    processing_message = await query.edit_message_text(
-        "🔍 Analyzing most profitable token deployers... This may take a moment."
+        await handle_period_selection(
+        update=update,
+        context=context,
+        feature_info="Most Profitable Token Deployer Wallets Analysis",
+        scan_type="most_profitable_token_depolyer_wallet_in_period_scan",
+        callback_prefix="deployer_period"
     )
     
-    try:
-        # Get profitable deployers (last 30 days, top 10)
-        profitable_deployers = await get_profitable_deployers(30, 10)
-        
-        if not profitable_deployers:
-            await processing_message.edit_text(
-                "❌ Could not find profitable token deployer data at this time."
-            )
-            return
-        
-        # Format the response
-        response = f"🏆 <b>Most Profitable Token Deployer Wallets</b>\n\n"
-        
-        for i, deployer in enumerate(profitable_deployers, 1):
-            response += (
-                f"{i}. `{deployer['address'][:6]}...{deployer['address'][-4:]}`\n"
-                f"   Tokens Deployed: {deployer.get('tokens_deployed', 'N/A')}\n"
-                f"   Success Rate: {deployer.get('success_rate', 'N/A')}%\n"
-                f"   Avg. ROI: {deployer.get('avg_roi', 'N/A')}%\n\n"
-            )
-        
-        # Add button to export data
-        keyboard = [
-            [InlineKeyboardButton("Export Full Data", callback_data="export_ptd")],
-            [InlineKeyboardButton("Track Top Deployers", callback_data="track_top_deployers")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await processing_message.edit_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_most_profitable_token_deployer_wallet: {e}")
-        await processing_message.edit_text(
-            "❌ An error occurred while analyzing token deployers. Please try again later."
-        )
-
 async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle tokens deployed by wallet button callback"""
     query = update.callback_query
@@ -1686,6 +1597,131 @@ async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes
     
     # Set conversation state to expect wallet address for tokens deployed analysis
     context.user_data["expecting"] = "tokens_deployed_wallet_address"
+
+
+async def handle_period_selection_callback(
+    update: Update, 
+    context: ContextTypes.DEFAULT_TYPE,
+    get_data_func,
+    format_response_func,
+    scan_count_type: str,
+    processing_message_text: str,
+    error_message_text: str,
+    no_data_message_text: str,
+    free_limit: int = FREE_RESPONSE_DAILY,
+    premium_limit: int = 10
+) -> None:
+    """
+    Generic handler for period selection callbacks
+    
+    Args:
+        update: The update object
+        context: The context object
+        get_data_func: Function to get the data
+        format_response_func: Function to format the response
+        scan_count_type: Type of scan to increment count for
+        processing_message_text: Text to show while processing
+        error_message_text: Text to show on error
+        no_data_message_text: Text to show when no data is found
+        free_limit: Limit for free users
+        premium_limit: Limit for premium users
+    """
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    selected_period = int(query.data.split("_")[-1])
+    logging.info(f"Selected period: {selected_period} days")
+    
+    # Store the selected period in context
+    context.user_data["selected_period"] = selected_period
+    
+    # Get the selected chain
+    selected_chain = context.user_data.get("selected_chain", "eth")
+    logging.info(f"Selected chain: {selected_chain}")    
+    # Process the request
+    processing_message = await query.edit_message_text(
+        processing_message_text.format(days=selected_period)
+    )
+    
+    try:
+        # For free users, limit the number of results
+        limit = premium_limit if user.is_premium else free_limit
+        logging.info(f"User is premium: {user.is_premium}, using limit: {limit}")
+        logging.info(f"Calling get_data_func with days={selected_period}, limit={limit}, chain={selected_chain}")
+
+        data = await get_data_func(
+            days=selected_period,
+            limit=limit,
+            chain=selected_chain
+        )
+        
+        if not data:
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await processing_message.edit_text(
+                no_data_message_text,
+                reply_markup=reply_markup
+            )
+            return
+        
+        # Format the response
+        response, keyboard = format_response_func(data)
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await processing_message.edit_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        
+        # Increment scan count
+        await increment_scan_count(user.user_id, scan_count_type)
+        
+    except Exception as e:
+        logging.error(f"Error in handle_period_selection_callback: {e}")
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await processing_message.edit_text(
+            error_message_text,
+            reply_markup=reply_markup
+        )
+
+async def handle_profitable_period_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle selection of time period for profitable wallets analysis"""
+    logging.info("Welcome to handle_profitable_period_selection_callback")
+    
+    await handle_period_selection_callback(
+        update=update,
+        context=context,
+        scan_type="wallet_most_profitable_in_period_scan",
+        get_data_func=get_wallet_most_profitable_in_period,
+        format_response_func=format_wallet_most_profitable_response,
+        processing_message_text="🔍 Finding most profitable wallets in the last {days} days... This may take a moment.",
+        error_message_text="❌ An error occurred while analyzing profitable wallets. Please try again later.",
+        no_data_message_text="❌ Could not find profitable wallets for this period.",
+        free_limit=FREE_RESPONSE_DAILY,
+        premium_limit=10
+    )
+
+async def handle_deployer_period_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle selection of time period for profitable token deployer wallets analysis"""
+    from data.database import get_most_profitable_token_deployer_wallets
+    from utils import format_deployer_wallets_response
+    
+    await handle_period_selection_callback(
+        update=update,
+        context=context,
+        get_data_func=get_most_profitable_token_deployer_wallets,
+        format_response_func=format_deployer_wallets_response,
+        scan_count_type="wallet_scan",
+        processing_message_text="🔍 Finding most profitable token deployers in the last {days} days... This may take a moment.",
+        error_message_text="❌ An error occurred while analyzing profitable token deployers. Please try again later.",
+        no_data_message_text="❌ Could not find profitable token deployers for this period.",
+        free_limit=FREE_RESPONSE_DAILY,
+        premium_limit=10
+    )
 
 # track and monitoring handlers
 async def handle_track_wallet_buy_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

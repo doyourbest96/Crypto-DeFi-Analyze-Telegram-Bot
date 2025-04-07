@@ -162,13 +162,13 @@ def get_tokens_by_deployer(deployer_address: str) -> List[TokenData]:
     tokens = db.token_data.find({"deployer": deployer_address.lower()})
     return [TokenData.from_dict(token) for token in tokens]
 
-def get_wallet_data(address: str) -> Optional[WalletData]:
-    """Get wallet data by address"""
-    db = get_database()
-    wallet_data = db.wallet_data.find_one({"address": address.lower()})
-    if wallet_data:
-        return WalletData.from_dict(wallet_data)
-    return None
+# def get_wallet_data(address: str) -> Optional[WalletData]:
+#     """Get wallet data by address"""
+#     db = get_database()
+#     wallet_data = db.wallet_data.find_one({"address": address.lower()})
+#     if wallet_data:
+#         return WalletData.from_dict(wallet_data)
+#     return None
 
 def save_wallet_data(wallet: WalletData) -> None:
     """Save or update wallet data"""
@@ -807,10 +807,8 @@ async def get_wallet_data(wallet_address: str, chain: str = "eth") -> dict:
     """
     logging.info(f"Placeholder: get_wallet_data called for {wallet_address} on {chain}")
     
-    # Generate random wallet data
     now = datetime.now()
     
-    # Create wallet data dictionary
     wallet_data = {
         "address": wallet_address,
         "first_transaction_date": (now - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d"),
@@ -887,42 +885,48 @@ async def get_wallet_holding_duration(wallet_address: str, chain: str = "eth") -
     
     return holding_data
 
-async def get_wallet_most_profitable_in_period(days: int = 30, limit: int = 10, chain: str = "eth") -> list:
+async def get_wallet_most_profitable_in_period(days: int = 30, limit: int = 10, chain: str = "eth") -> List[Dict[str, Any]]:
     """
-    Get most profitable wallets in a specific period
+    Get the most profitable wallets in a specific period
     
     Args:
-        days: Number of days to analyze
+        days: Number of days to look back
         limit: Maximum number of wallets to return
         chain: The blockchain network (eth, base, bsc)
         
     Returns:
-        List of dictionaries containing profitable wallet data
+        List of dictionaries containing wallet data
     """
-    logging.info(f"Placeholder: get_wallet_most_profitable_in_period called for {days} days on {chain}")
+    logging.info(f"Getting most profitable wallets for {days} days, limit {limit}, chain {chain}")
     
-    # Generate dummy profitable wallets data
-    profitable_wallets = []
-    
-    for i in range(limit):
-        wallet_address = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+    try:
+        # This would be replaced with actual blockchain analysis
+        # For now, we'll simulate the data
+        wallets = []
         
-        wallet = {
-            "address": wallet_address,
-            "total_profit": round(random.uniform(1000, 100000), 2),
-            "win_rate": round(random.uniform(50, 95), 2),
-            "trades_count": random.randint(10, 100),
-            "avg_profit_per_trade": round(random.uniform(100, 2000), 2),
-            "chain": chain,
-            "period_days": days
-        }
+        for i in range(1, limit + 5):
+            # Generate random wallet data with decreasing profit
+            profit = round(100000 / i, 2)
+            win_rate = round(90 - (i * 1.5), 1)
+            trades = random.randint(10, 50)
+            
+            wallets.append({
+                "address": f"0x{i}wallet{random.randint(1000, 9999)}",
+                "total_profit": profit,
+                "win_rate": win_rate,
+                "trades_count": trades,
+                "period_days": days,
+                "chain": chain
+            })
         
-        profitable_wallets.append(wallet)
-    
-    # Sort by total profit (descending)
-    profitable_wallets.sort(key=lambda x: x["total_profit"], reverse=True)
-    
-    return profitable_wallets
+        # Sort by profit
+        wallets.sort(key=lambda x: x["total_profit"], reverse=True)
+        
+        logging.info(f"Returning {len(wallets[:limit])} wallets")
+        return wallets[:limit]
+    except Exception as e:
+        logging.error(f"Error getting most profitable wallets: {e}", exc_info=True)
+        return []
 
 async def get_most_profitable_token_deployer_wallets(days: int = 30, limit: int = 10, chain: str = "eth") -> list:
     """
