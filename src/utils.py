@@ -119,7 +119,6 @@ async def handle_token_analysis_input(
     """
     token_address = update.message.text.strip()
     selected_chain = context.user_data.get("default_network")
-    print(f"Selected chain: {selected_chain}")
     
     # Validate address
     if not await is_valid_token_contract(token_address, selected_chain):
@@ -500,6 +499,7 @@ def format_high_net_worth_holders_response(high_net_worth_holders: List[Dict[str
     
     return response, keyboard
 
+
 #wallet analysis input
 async def handle_wallet_analysis_input(
     update: Update,
@@ -511,7 +511,6 @@ async def handle_wallet_analysis_input(
     processing_message_text: str,
     error_message_text: str,
     no_data_message_text: str,
-    additional_params: dict = None
 ) -> None:
     """
     Generic handler for wallet analysis inputs
@@ -529,11 +528,9 @@ async def handle_wallet_analysis_input(
         additional_params: Additional parameters to pass to get_data_func
     """
     wallet_address = update.message.text.strip()
-    
-    # Get the selected chain (default to "eth" if not specified)
     selected_chain = context.user_data.get("selected_chain", "eth")
     
-    if not await is_valid_wallet_address(wallet_address, chain=selected_chain):
+    if not await is_valid_wallet_address(wallet_address, selected_chain):
         keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
                
@@ -545,20 +542,9 @@ async def handle_wallet_analysis_input(
     
     # Send processing message
     processing_message = await update.message.reply_text(processing_message_text)
-    
     try:
-        # Prepare parameters for the data function
-        params = {"chain": selected_chain}
-        if additional_params:
-            params.update(additional_params)
-        
-        # Get data - pass the wallet address and parameters
-        if "days" in params or "limit" in params:
-            # For functions that don't take a wallet address
-            data = await get_data_func(**params)
-        else:
-            # For functions that take a wallet address
-            data = await get_data_func(wallet_address, **params)
+        # Get data
+        data = await get_data_func(wallet_address, selected_chain)
         
         if not data:
             # Add back button when no data is found
@@ -808,103 +794,103 @@ async def prompt_wallet_chain_selection(update: Update, context: ContextTypes.DE
         parse_mode=ParseMode.HTML
     )
 
-async def handle_wallet_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle wallet chain selection callbacks"""
-    query = update.callback_query
-    callback_data = query.data
+# async def handle_wallet_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     """Handle wallet chain selection callbacks"""
+#     query = update.callback_query
+#     callback_data = query.data
     
-    # Extract feature and chain from callback data
-    # Format: "{feature}_chain_{chain}"
-    parts = callback_data.split("_chain_")
-    if len(parts) != 2:
-        await query.answer("Invalid selection", show_alert=True)
-        return
+#     # Extract feature and chain from callback data
+#     # Format: "{feature}_chain_{chain}"
+#     parts = callback_data.split("_chain_")
+#     if len(parts) != 2:
+#         await query.answer("Invalid selection", show_alert=True)
+#         return
     
-    feature = parts[0]
-    chain = parts[1]
+#     feature = parts[0]
+#     chain = parts[1]
     
-    # Store the selected chain in user_data
-    context.user_data["selected_chain"] = chain
+#     # Store the selected chain in user_data
+#     context.user_data["selected_chain"] = chain
     
-    # Map of feature to expecting state and display name
-    feature_map = {
-        "wallet_holding_duration": {
-            "expecting": "wallet_holding_duration_address",
-            "display": "holding duration"
-        },
-        "wallet_most_profitable_in_period": {
-            "expecting": "wallet_most_profitable_params",
-            "display": "most profitable wallets"
-        },
-        "most_profitable_token_deployer_wallet": {
-            "expecting": "most_profitable_token_deployer_params",
-            "display": "most profitable token deployers"
-        },
-        "tokens_deployed_by_wallet": {
-            "expecting": "tokens_deployed_wallet_address",
-            "display": "tokens deployed"
-        }
-    }
+#     # Map of feature to expecting state and display name
+#     feature_map = {
+#         "wallet_holding_duration": {
+#             "expecting": "wallet_holding_duration_address",
+#             "display": "holding duration"
+#         },
+#         "wallet_most_profitable_in_period": {
+#             "expecting": "wallet_most_profitable_params",
+#             "display": "most profitable wallets"
+#         },
+#         "most_profitable_token_deployer_wallet": {
+#             "expecting": "most_profitable_token_deployer_params",
+#             "display": "most profitable token deployers"
+#         },
+#         "tokens_deployed_by_wallet": {
+#             "expecting": "tokens_deployed_wallet_address",
+#             "display": "tokens deployed"
+#         }
+#     }
     
-    # Get feature info
-    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+#     # Get feature info
+#     feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
     
-    # Get chain display name
-    from services.blockchain import get_chain_display_name
-    chain_display = get_chain_display_name(chain)
+#     # Get chain display name
+#     from services.blockchain import get_chain_display_name
+#     chain_display = get_chain_display_name(chain)
     
-    # Handle features that need parameters vs. those that need wallet addresses
-    if feature == "wallet_most_profitable_in_period":
-        # For features that need parameters
-        keyboard = [
-            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+#     # Handle features that need parameters vs. those that need wallet addresses
+#     if feature == "wallet_most_profitable_in_period":
+#         # For features that need parameters
+#         keyboard = [
+#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
+#         ]
+#         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await query.edit_message_text(
-            f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-            f"Please enter parameters for {feature_info['display']} in this format:\n\n"
-            f"`<days> <min_trades> <min_profit_usd>`\n\n"
-            f"Example: `30 10 1000`\n\n"
-            f"This will find wallets active in the last 30 days, with at least 10 trades, "
-            f"and minimum profit of $1,000.",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    elif feature == "most_profitable_token_deployer_wallet":
-        # For features that need parameters
-        keyboard = [
-            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+#         await query.edit_message_text(
+#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
+#             f"Please enter parameters for {feature_info['display']} in this format:\n\n"
+#             f"`<days> <min_trades> <min_profit_usd>`\n\n"
+#             f"Example: `30 10 1000`\n\n"
+#             f"This will find wallets active in the last 30 days, with at least 10 trades, "
+#             f"and minimum profit of $1,000.",
+#             reply_markup=reply_markup,
+#             parse_mode=ParseMode.HTML
+#         )
+#     elif feature == "most_profitable_token_deployer_wallet":
+#         # For features that need parameters
+#         keyboard = [
+#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
+#         ]
+#         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await query.edit_message_text(
-            f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-            f"Please enter parameters for {feature_info['display']} in this format:\n\n"
-            f"`<days> <min_tokens> <min_success_rate>`\n\n"
-            f"Example: `30 5 50`\n\n"
-            f"This will find deployers active in the last 30 days, with at least 5 tokens deployed, "
-            f"and minimum success rate of 50%.",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    else:
-        # For features that need wallet addresses
-        keyboard = [
-            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+#         await query.edit_message_text(
+#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
+#             f"Please enter parameters for {feature_info['display']} in this format:\n\n"
+#             f"`<days> <min_tokens> <min_success_rate>`\n\n"
+#             f"Example: `30 5 50`\n\n"
+#             f"This will find deployers active in the last 30 days, with at least 5 tokens deployed, "
+#             f"and minimum success rate of 50%.",
+#             reply_markup=reply_markup,
+#             parse_mode=ParseMode.HTML
+#         )
+#     else:
+#         # For features that need wallet addresses
+#         keyboard = [
+#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
+#         ]
+#         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await query.edit_message_text(
-            f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-            f"Please send me the wallet address to analyze its {feature_info['display']}.\n\n"
-            f"Example: `0x1234...abcd`",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
+#         await query.edit_message_text(
+#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
+#             f"Please send me the wallet address to analyze its {feature_info['display']}.\n\n"
+#             f"Example: `0x1234...abcd`",
+#             reply_markup=reply_markup,
+#             parse_mode=ParseMode.HTML
+#         )
     
-    # Set conversation state to expect input for the specific feature
-    context.user_data["expecting"] = feature_info["expecting"]
+#     # Set conversation state to expect input for the specific feature
+#     context.user_data["expecting"] = feature_info["expecting"]
 
 # Now update the wallet analysis handler functions
 
@@ -925,172 +911,6 @@ async def handle_wallet_holding_duration_input(update: Update, context: ContextT
         no_data_message_text="❌ Could not find holding duration data for this wallet."
     )
 
-# async def handle_wallet_most_profitable_params_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     """Handle wallet most profitable parameters input"""
-#     try:
-#         # Parse parameters from user input
-#         params_text = update.message.text.strip()
-#         params = params_text.split()
-        
-#         if len(params) < 3:
-#             await update.message.reply_text(
-#                 "⚠️ Please provide all required parameters in the format:\n"
-#                 "`<days> <min_trades> <min_profit_usd>`\n\n"
-#                 "Example: `30 10 1000`"
-#             )
-#             return
-        
-#         days = int(params[0])
-#         min_trades = int(params[1])
-#         min_profit = float(params[2])
-        
-#         # Validate parameters
-#         if days <= 0 or days > 365:
-#             await update.message.reply_text("⚠️ Days must be between 1 and 365.")
-#             return
-        
-#         if min_trades < 0:
-#             await update.message.reply_text("⚠️ Minimum trades cannot be negative.")
-#             return
-        
-#         # Send processing message
-#         processing_message = await update.message.reply_text(
-#             "🔍 Finding most profitable wallets... This may take a moment."
-#         )
-        
-#         # Get the selected chain
-#         selected_chain = context.user_data.get("selected_chain", "eth")
-        
-#         # Get data
-#         from data.database import get_wallet_most_profitable_in_period
-        
-#         # For free users, limit the number of results
-#         user = await check_callback_user(update)
-#         limit = 10 if user.is_premium else FREE_PROFITABLE_WALLETS_LIMIT
-        
-#         data = await get_wallet_most_profitable_in_period(
-#             days=days,
-#             limit=limit,
-#             chain=selected_chain
-#         )
-        
-#         if not data:
-#             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
-#             reply_markup = InlineKeyboardMarkup(keyboard)
-            
-#             await processing_message.edit_text(
-#                 "❌ Could not find profitable wallets matching your criteria.",
-#                 reply_markup=reply_markup
-#             )
-#             return
-        
-#         # Format the response
-#         response, keyboard = format_wallet_most_profitable_response(data)
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-        
-#         await processing_message.edit_text(
-#             response,
-#             reply_markup=reply_markup,
-#             parse_mode=ParseMode.HTML
-#         )
-        
-#     except ValueError:
-#         await update.message.reply_text(
-#             "⚠️ Invalid parameters. Please provide numbers in the format:\n"
-#             "`<days> <min_trades> <min_profit_usd>`\n\n"
-#             "Example: `30 10 1000`"
-#         )
-#     except Exception as e:
-#         logging.error(f"Error in handle_wallet_most_profitable_params_input: {e}")
-#         await update.message.reply_text(
-#             "❌ An error occurred while processing your request. Please try again later."
-#         )
-
-# async def handle_most_profitable_token_deployer_params_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     """Handle most profitable token deployer parameters input"""
-#     try:
-#         # Parse parameters from user input
-#         params_text = update.message.text.strip()
-#         params = params_text.split()
-        
-#         if len(params) < 3:
-#             await update.message.reply_text(
-#                 "⚠️ Please provide all required parameters in the format:\n"
-#                 "`<days> <min_tokens> <min_success_rate>`\n\n"
-#                 "Example: `30 5 50`"
-#             )
-#             return
-        
-#         days = int(params[0])
-#         min_tokens = int(params[1])
-#         min_success_rate = float(params[2])
-        
-#         # Validate parameters
-#         if days <= 0 or days > 365:
-#             await update.message.reply_text("⚠️ Days must be between 1 and 365.")
-#             return
-        
-#         if min_tokens < 0:
-#             await update.message.reply_text("⚠️ Minimum tokens cannot be negative.")
-#             return
-        
-#         if min_success_rate < 0 or min_success_rate > 100:
-#             await update.message.reply_text("⚠️ Success rate must be between 0 and 100.")
-#             return
-        
-#         # Send processing message
-#         processing_message = await update.message.reply_text(
-#             "🔍 Finding most profitable token deployers... This may take a moment."
-#         )
-        
-#         # Get the selected chain
-#         selected_chain = context.user_data.get("selected_chain", "eth")
-        
-#         # Get data
-#         from data.database import get_most_profitable_token_deployer_wallets
-        
-#         # For free users, limit the number of results
-#         user = await check_callback_user(update)
-#         limit = 10 if user.is_premium else FREE_PROFITABLE_WALLETS_LIMIT
-        
-#         data = await get_most_profitable_token_deployer_wallets(
-#             days=days,
-#             limit=limit,
-#             chain=selected_chain
-#         )
-        
-#         if not data:
-#             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
-#             reply_markup = InlineKeyboardMarkup(keyboard)
-            
-#             await processing_message.edit_text(
-#                 "❌ Could not find profitable token deployers matching your criteria.",
-#                 reply_markup=reply_markup
-#             )
-#             return
-        
-#         # Format the response
-#         response, keyboard = format_deployer_wallets_response(data)
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-        
-#         await processing_message.edit_text(
-#             response,
-#             reply_markup=reply_markup,
-#             parse_mode=ParseMode.HTML
-#         )
-        
-#     except ValueError:
-#         await update.message.reply_text(
-#             "⚠️ Invalid parameters. Please provide numbers in the format:\n"
-#             "`<days> <min_tokens> <min_success_rate>`\n\n"
-#             "Example: `30 5 50`"
-#         )
-#     except Exception as e:
-#         logging.error(f"Error in handle_most_profitable_token_deployer_params_input: {e}")
-#         await update.message.reply_text(
-#             "❌ An error occurred while processing your request. Please try again later."
-#         )
-
 async def handle_tokens_deployed_wallet_address_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle tokens deployed by wallet input"""
     from utils import handle_wallet_analysis_input
@@ -1107,7 +927,6 @@ async def handle_tokens_deployed_wallet_address_input(update: Update, context: C
         error_message_text="❌ An error occurred while analyzing the wallet. Please try again later.",
         no_data_message_text="❌ Could not find any tokens deployed by this wallet."
     )
-
 
 async def handle_period_selection(
     update: Update, 

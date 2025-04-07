@@ -704,7 +704,33 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             processing_message_text="🔍 Analyzing token's high net worth holders... This may take a moment.",
             error_message_text="❌ An error occurred while analyzing the token's high net worth holders. Please try again later.",
             no_data_message_text="❌ Could not find high net worth holders data for this token."
-        )  
+        ) 
+
+    elif expecting == "wallet_holding_duration_address":
+        await handle_wallet_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="wallet_holding_duration",
+            get_data_func=get_wallet_holding_duration,
+            format_response_func=format_wallet_holding_duration_response,
+            scan_count_type="wallet_holding_duration_scan",
+            processing_message_text="🔍 Analyzing wallet's token holding duration... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the wallet's holding duration. Please try again later.",
+            no_data_message_text="❌ Could not find holding duration data for this wallet."
+        )
+    
+    elif expecting == "tokens_deployed_wallet_address":
+        await handle_wallet_analysis_input(
+            update=update,
+            context=context,
+            analysis_type="tokens_deployed_by_wallet",
+            get_data_func=get_tokens_deployed_by_wallet,
+            format_response_func=format_tokens_deployed_response,
+            scan_count_type="tokens_deployed_scan",
+            processing_message_text="🔍 Analyzing tokens deployed by this wallet... This may take a moment.",
+            error_message_text="❌ An error occurred while analyzing the tokens deployed. Please try again later.",
+            no_data_message_text="❌ Could not find any tokens deployed by this wallet."
+        ) 
 
 # help handlers
 async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1516,46 +1542,6 @@ async def handle_wallet_most_profitable_in_period(update: Update, context: Conte
         callback_prefix="profitable_period"
     )
 
-async def handle_wallet_holding_duration(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle wallet holding duration button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user has reached daily limit
-    has_reached_limit, current_count = await check_rate_limit_service(
-        user.user_id, "wallet_scan", FREE_WALLET_SCANS_DAILY
-    )
-    
-    if has_reached_limit and not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            f"⚠️ <b>Daily Limit Reached</b>\n\n"
-            f"You've used {current_count} out of {FREE_WALLET_SCANS_DAILY} daily wallet scans.\n\n"
-            f"Premium users enjoy unlimited scans! 💎<b>Upgrade to Premium</b> for more features.\n\n",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address to analyze its token holding duration.\n\n"
-        "Example: `0x1234...abcd`\n\n"
-        "I'll analyze how long this wallet typically holds tokens before selling.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for holding duration analysis
-    context.user_data["expecting"] = "wallet_holding_duration_address"
-    
-    # Increment the scan count for this user
-    await increment_scan_count(user.user_id, "wallet_scan")
-
 async def handle_most_profitable_token_deployer_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await handle_period_selection(
         update=update,
@@ -1565,6 +1551,41 @@ async def handle_most_profitable_token_deployer_wallet(update: Update, context: 
         callback_prefix="deployer_period"
     )
     
+async def handle_wallet_holding_duration(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle wallet holding duration button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    # Check if user has reached daily limit
+    has_reached_limit, current_count = await check_rate_limit_service(
+        user.user_id, "wallet_holding_duration_scan", FREE_WALLET_SCANS_DAILY
+    )
+    
+    if has_reached_limit and not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.message.reply_text(
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
+            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_WALLET_SCANS_DAILY}</b> free daily scans for <b>Wallet Intelligence Analysis</b>.\n"
+            f"This feature reveals wallet behavior, holding duration, token deployment patterns, and profitability over time. Perfect for spotting smart wallets and high-performing traders! 🧠📊\n\n"
+            f"💎 <b>Upgrade to Premium</b> for unlimited access and advanced features:\n"
+            f"• Run unlimited wallet scans 🔍\n"
+            f"• Uncover hidden whales and top deployers 🐋\n"
+            f"• Get profit breakdowns, claim behavior, and token interaction data 📈\n"
+            f"• Dive deep into DeFi with powerful analytics 🚀\n\n"
+            f"🔓 Unlock deeper on-chain intelligence with Premium today!",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+
+        return
+    
+    await handle_wallet_analysis_wallet_input(update, context, "wallet_holding_duration")
+
 async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle tokens deployed by wallet button callback"""
     query = update.callback_query
@@ -1574,29 +1595,29 @@ async def handle_tokens_deployed_by_wallet(update: Update, context: ContextTypes
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
+        await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "Tokens Deployed by Wallet analysis is only available to premium users.\n\n"
-            "Upgrade to premium to unlock all features!",
+            "🔍 <b>Tokens Deployed by Wallet</b> is a powerful analytics tool that reveals every token a wallet has deployed—great for identifying smart contract creators, tracking deployer activity, and spotting patterns early! 🧠💥\n\n"
+            "🚫 This feature is currently available only for <b>Premium users</b>.\n\n"
+            "💎 <b>Upgrade to Premium</b> and unlock full access to:\n"
+            "• Token deployment histories 📜\n"
+            "• Wallet profit and claim tracking 💰\n"
+            "• Early buyer detection tools 📈\n"
+            "• Deep dive DeFi intelligence 🚀\n\n"
+            "🔓 Tap into the full power of DeFi-Scope with Premium access!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
         return
     
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address to find all tokens deployed by this wallet.\n\n"
-        "Example: `0x1234...abcd`\n\n"
-        "I'll analyze and show you all tokens this wallet has deployed.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for tokens deployed analysis
-    context.user_data["expecting"] = "tokens_deployed_wallet_address"
+    # Prompt user to input wallet address
+    await handle_wallet_analysis_wallet_input(update, context, "tokens_deployed_by_wallet")
+
+
 
 
 async def handle_period_selection_callback(
@@ -1824,11 +1845,6 @@ async def handle_track_profitable_wallets(update: Update, context: ContextTypes.
                 "❌ Could not find profitable wallets to track at this time."
             )
             return
-        
-        # Create tracking subscriptions for top wallets
-        from data.models import TrackingSubscription
-        from datetime import datetime
-        from data.database import save_tracking_subscription
         
         for wallet in profitable_wallets:
             subscription = TrackingSubscription(
@@ -2100,10 +2116,56 @@ async def handle_chain_selection_callback(update: Update, context: ContextTypes.
     # Set conversation state to expect token address for the specific feature
     context.user_data["expecting"] = feature_info["expecting"]
 
+async def handle_wallet_analysis_wallet_input(update: Update, context: ContextTypes.DEFAULT_TYPE, feature: str) -> None:
+    """
+    Generic function to prompt user to input a wallet address for analysis
+    
+    Args:
+        update: The update object
+        context: The context object
+        feature: The feature identifier (e.g., 'wallet_holding_duration', 'tokens_deployed_by_wallet', etc.)
+    """
+    query = update.callback_query
+    chain = context.user_data.get("default_network", "eth")
+    
+    # Map of feature to expecting state and display name
+    feature_map = {
+        "wallet_holding_duration": {
+            "expecting": "wallet_holding_duration_address",
+            "display": "token holding duration"
+        },
+        "tokens_deployed_by_wallet": {
+            "expecting": "tokens_deployed_wallet_address",
+            "display": "tokens deployed"
+        }
+    }
 
+    # Map of chain to display name
+    chain_display = {
+        "eth": "🌐 Ethereum",
+        "base": "🛡️ Base",
+        "bsc": "🔶 BSC"
+    }
+    
+    # Get feature info
+    feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
+    
+    # Prompt user to enter wallet address with back button
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-
-
+    await query.message.reply_text(
+        f"🔍 <b>Wallet Analysis on {chain_display.get(chain, chain.upper())}</b>\n\n"
+        f"Please send me the wallet address to analyze its {feature_info['display']}.\n\n"
+        f"Example: `0x1234...abcd`",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    # Set conversation state to expect wallet address for the specific feature
+    context.user_data["expecting"] = feature_info["expecting"]
 
 async def handle_premium_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle premium info callback"""
