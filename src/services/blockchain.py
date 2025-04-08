@@ -1,5 +1,4 @@
 import logging
-import aiohttp
 import asyncio
 from typing import Dict, List, Optional, Any
 import re
@@ -21,8 +20,6 @@ from services.notification import (
     format_token_deployment_notification,
     format_profitable_wallet_notification
 )
-
-from utils import get_token_info
 
 # Configure web3 connection
 # This would be replaced with your actual blockchain node connection
@@ -95,7 +92,6 @@ async def is_valid_token_contract(address: str, chain:str) -> bool:
             return False
             
         code = w3.eth.get_code(checksum_address)
-        print(f"Code at address {address}: {code}")
 
         if code == b'' or code == '0x':
             return False  # No code at this address, not a contract
@@ -107,7 +103,6 @@ async def is_valid_token_contract(address: str, chain:str) -> bool:
         try:
             symbol = contract.functions.symbol().call()
             logging.info(f"Token symbol: {symbol}")
-            return True
         except Exception as e:
             logging.warning(f"Error getting token symbol: {e}")
         
@@ -314,6 +309,8 @@ async def start_blockchain_monitor():
 async def monitor_blockchain_events():
     """Background task to monitor blockchain events and send notifications"""
     logging.info("Blockchain monitor running")
+
+    from utils import get_token_info
     
     # Keep track of processed transactions to avoid duplicate notifications
     processed_txs = set()
