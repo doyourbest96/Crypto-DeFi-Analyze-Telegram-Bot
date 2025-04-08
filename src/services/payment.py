@@ -2,7 +2,7 @@ import logging
 import aiohttp
 from web3 import Web3
 from typing import Dict, Any, Tuple
-from config import ETHERSCAN_API_KEY, WEB3_PROVIDER_URI, BSCSCAN_API_KEY, SUBSCRIPTION_WALLET_ADDRESS
+from config import ETHERSCAN_API_KEY, BSCSCAN_API_KEY, SUBSCRIPTION_WALLET_ADDRESS
 
 async def verify_crypto_payment(
     transaction_id: str, 

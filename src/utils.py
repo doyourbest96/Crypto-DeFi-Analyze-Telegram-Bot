@@ -219,7 +219,8 @@ async def get_token_info(token_address: str, chain: str = "eth") -> Optional[Dic
         ]
         
         # Create contract instance
-        contract = w3.eth.contract(address=token_address, abi=abi)
+        checksum_address = w3.to_checksum_address(token_address)
+        contract = w3.eth.contract(address=checksum_address, abi=abi)
         
         # Get basic token information
         name = contract.functions.name().call()
@@ -795,104 +796,6 @@ async def prompt_wallet_chain_selection(update: Update, context: ContextTypes.DE
         parse_mode=ParseMode.HTML
     )
 
-# async def handle_wallet_chain_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     """Handle wallet chain selection callbacks"""
-#     query = update.callback_query
-#     callback_data = query.data
-    
-#     # Extract feature and chain from callback data
-#     # Format: "{feature}_chain_{chain}"
-#     parts = callback_data.split("_chain_")
-#     if len(parts) != 2:
-#         await query.answer("Invalid selection", show_alert=True)
-#         return
-    
-#     feature = parts[0]
-#     chain = parts[1]
-    
-#     # Store the selected chain in user_data
-#     context.user_data["selected_chain"] = chain
-    
-#     # Map of feature to expecting state and display name
-#     feature_map = {
-#         "wallet_holding_duration": {
-#             "expecting": "wallet_holding_duration_address",
-#             "display": "holding duration"
-#         },
-#         "wallet_most_profitable_in_period": {
-#             "expecting": "wallet_most_profitable_params",
-#             "display": "most profitable wallets"
-#         },
-#         "most_profitable_token_deployer_wallet": {
-#             "expecting": "most_profitable_token_deployer_params",
-#             "display": "most profitable token deployers"
-#         },
-#         "tokens_deployed_by_wallet": {
-#             "expecting": "tokens_deployed_wallet_address",
-#             "display": "tokens deployed"
-#         }
-#     }
-    
-#     # Get feature info
-#     feature_info = feature_map.get(feature, {"expecting": "unknown", "display": feature})
-    
-#     # Get chain display name
-#     from services.blockchain import get_chain_display_name
-#     chain_display = get_chain_display_name(chain)
-    
-#     # Handle features that need parameters vs. those that need wallet addresses
-#     if feature == "wallet_most_profitable_in_period":
-#         # For features that need parameters
-#         keyboard = [
-#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-#         ]
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-
-#         await query.edit_message_text(
-#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-#             f"Please enter parameters for {feature_info['display']} in this format:\n\n"
-#             f"`<days> <min_trades> <min_profit_usd>`\n\n"
-#             f"Example: `30 10 1000`\n\n"
-#             f"This will find wallets active in the last 30 days, with at least 10 trades, "
-#             f"and minimum profit of $1,000.",
-#             reply_markup=reply_markup,
-#             parse_mode=ParseMode.HTML
-#         )
-#     elif feature == "most_profitable_token_deployer_wallet":
-#         # For features that need parameters
-#         keyboard = [
-#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-#         ]
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-
-#         await query.edit_message_text(
-#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-#             f"Please enter parameters for {feature_info['display']} in this format:\n\n"
-#             f"`<days> <min_tokens> <min_success_rate>`\n\n"
-#             f"Example: `30 5 50`\n\n"
-#             f"This will find deployers active in the last 30 days, with at least 5 tokens deployed, "
-#             f"and minimum success rate of 50%.",
-#             reply_markup=reply_markup,
-#             parse_mode=ParseMode.HTML
-#         )
-#     else:
-#         # For features that need wallet addresses
-#         keyboard = [
-#             [InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]
-#         ]
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-
-#         await query.edit_message_text(
-#             f"🔍 <b>Wallet Analysis on {chain_display}</b>\n\n"
-#             f"Please send me the wallet address to analyze its {feature_info['display']}.\n\n"
-#             f"Example: `0x1234...abcd`",
-#             reply_markup=reply_markup,
-#             parse_mode=ParseMode.HTML
-#         )
-    
-#     # Set conversation state to expect input for the specific feature
-#     context.user_data["expecting"] = feature_info["expecting"]
-
 
 # kol wallet profitability
 def format_kol_wallet_profitability_response(data: list) -> tuple:
@@ -995,8 +898,7 @@ async def handle_period_selection(
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"You’ve already used <b>{current_count}</b> out of your <b>{FREE_WALLET_SCANS_DAILY}</b> free daily wallet scans available for today. 🚫\n\n"
-            f"To unlock unlimited access to powerful wallet analysis features, upgrade to <b>Premium</b> and explore the full potential of on-chain intelligence. 💎\n"
-            f"With Premium, you can scan as many wallets as you like, track top-performing traders, monitor token deployers, and much more — all without limits! 🚀",
+            f"To unlock unlimited access to powerful wallet analysis features, upgrade to <b>Premium</b> and explore the full potential of on-chain intelligence. 💎\n",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )

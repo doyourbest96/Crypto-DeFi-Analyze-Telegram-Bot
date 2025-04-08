@@ -971,7 +971,7 @@ async def get_tokens_deployed_by_wallet(wallet_address: str, chain: str = "eth")
 
 
 # kol wallet profitability
-async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth") -> list:
+async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth", kol_name: str = None) -> list:
     """
     Get KOL wallet profitability data (DUMMY IMPLEMENTATION)
     
@@ -979,6 +979,7 @@ async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth"
         days: Number of days to analyze
         limit: Maximum number of results to return
         chain: Blockchain to analyze
+        kol_name: Name of the specific KOL to filter by (optional)
         
     Returns:
         List of KOL wallet profitability data
@@ -994,6 +995,15 @@ async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth"
     
     # Generate random KOL wallet data
     kol_wallets = []
+    
+    # If kol_name is provided, filter the list to only include that name (case-insensitive)
+    if kol_name:
+        filtered_names = [name for name in kol_names if kol_name.lower() in name.lower()]
+        # If no match found, add the provided name to ensure we return something
+        if not filtered_names and kol_name.strip():
+            filtered_names = [kol_name]
+        kol_names = filtered_names
+    
     for i in range(min(len(kol_names), limit + 5)):  # Generate a few extra to sort later
         # Create base wallet data
         total_profit = random.uniform(10000, 1000000)
@@ -1027,7 +1037,7 @@ async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth"
         
         # Create wallet object
         wallet = {
-            "name": kol_names[i],
+            "name": kol_names[i] if i < len(kol_names) else f"Unknown KOL {i}",
             "address": address,
             "total_profit": total_profit,
             "period_profit": period_profit,

@@ -1,12 +1,11 @@
 import logging
-import aiohttp
 import asyncio
 from typing import Dict, List, Optional, Any
 import re
 from web3 import Web3
 from web3.exceptions import InvalidAddress, ContractLogicError
 
-from config import WEB3_PROVIDER_URI
+from config import WEB3_PROVIDER_URI_KEY
 
 from datetime import datetime, timedelta
 
@@ -22,11 +21,9 @@ from services.notification import (
     format_profitable_wallet_notification
 )
 
-# from utils import get_token_info
-
 # Configure web3 connection
 # This would be replaced with your actual blockchain node connection
-w3_eth = Web3(Web3.HTTPProvider(f"https://mainnet.infura.io/v3/{WEB3_PROVIDER_URI}"))
+w3_eth = Web3(Web3.HTTPProvider("https://mainnet.infura.io/v3/29bb8bd1892e49eb8af5cea9060caa4e"))
 w3_base = Web3(Web3.HTTPProvider('https://mainnet.base.org'))
 w3_bsc = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
 
@@ -64,76 +61,51 @@ async def is_valid_address(address: str) -> bool:
     if not address:
         return False
     
-    if not re.match(r'^0x[a-fA-F0-9]{40}$', address):
-        return False
-    
-    return True
-
-async def is_valid_token_contract(address: str, chain:str) -> bool:
-    """
-    Validate if the provided address is a valid token contract
-    
-    Args:
-        address: The contract address to validate
-        chain: The blockchain network (eth, base, bsc)
-    
-    Returns:
-        bool: True if the address is a valid token contract, False otherwise
-    """
-    # First check if it's a valid address
+    return Web3.is_address(address)
+async def is_valid_token_contract(address: str, chain: str) -> bool:
     if not await is_valid_address(address):
+        logging.warning(f"Invalid address format: {address}")
         return False
-    
-    # Get the appropriate web3 provider
-    w3 = get_web3_provider(chain)
-    
-    try:
-        try:
-            checksum_address = w3.to_checksum_address(address.lower())
-        except ValueError as e:
-            logging.error(f"Invalid address format: {e}")
-            return False
-            
-        code = w3.eth.get_code(checksum_address)
-        print(f"Code at address {address}: {code}")
 
-        if code == b'' or code == '0x':
-            return False  # No code at this address, not a contract
-        
-        # Try to instantiate the contract with ERC20 ABI
-        contract = w3.eth.contract(address=address, abi=ERC20_ABI)
-        
-        # Try to call some standard ERC20 functions
+    w3 = get_web3_provider(chain)
+
+    try:
+        checksum_address = w3.to_checksum_address(address.lower())
+        code = w3.eth.get_code(checksum_address)
+
+        if code == b'' or code == b'0x':
+            logging.info("Address has no contract code.")
+            return False
+
+        contract = w3.eth.contract(address=checksum_address, abi=ERC20_ABI)
+
         try:
             symbol = contract.functions.symbol().call()
             logging.info(f"Token symbol: {symbol}")
-            return True
         except Exception as e:
-            logging.warning(f"Error getting token symbol: {e}")
-        
+            logging.warning(f"Couldn't get token symbol: {e}")
+
         try:
             name = contract.functions.name().call()
             logging.info(f"Token name: {name}")
             return True
         except Exception as e:
-            logging.warning(f"Error getting token name: {e}")
-        
+            logging.warning(f"Couldn't get token name: {e}")
+
         try:
             decimals = contract.functions.decimals().call()
             logging.info(f"Token decimals: {decimals}")
             return True
         except Exception as e:
-            logging.warning(f"Error getting token decimals: {e}")
-        
-        # If we couldn't successfully call any ERC20 functions, it might not be a token
-        logging.warning(f"Address {address} has code but doesn't appear to be an ERC20 token")
-        return False
-        
-    except Exception as e:
-        logging.error(f"Error validating token contract on {chain}: {e}")
-        # Return False if we encounter any errors
+            logging.warning(f"Couldn't get token decimals: {e}")
+
+        logging.warning("Address has code but no ERC-20 behavior.")
         return False
 
+    except Exception as e:
+        logging.error(f"Error validating token contract: {e}")
+        return False
+    
 async def is_valid_wallet_address(address: str, chain:str) -> bool:
     """
     Validate if the provided address is a wallet (not a contract)
@@ -152,7 +124,7 @@ async def is_valid_wallet_address(address: str, chain:str) -> bool:
     w3 = get_web3_provider(chain)
     
     try:
-        checksum_address = w3.to_checksum_address(address)
+        checksum_address = w3.to_checksum_address(address.lower())
         code = w3.eth.get_code(checksum_address)
         # If there's no code, it's a regular wallet address
         return code == b'' or code == '0x'
@@ -214,7 +186,7 @@ async def get_recent_transactions(
     
     try:
         # Initialize Web3 connection
-        w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER_URI))
+        w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER_URI_KEY))
         
         # Normalize addresses
         wallet_address = w3.to_checksum_address(wallet_address)
@@ -314,6 +286,8 @@ async def start_blockchain_monitor():
 async def monitor_blockchain_events():
     """Background task to monitor blockchain events and send notifications"""
     logging.info("Blockchain monitor running")
+
+    from utils import get_token_info
     
     from utils import get_token_info
     

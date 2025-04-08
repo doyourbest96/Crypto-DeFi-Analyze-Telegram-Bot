@@ -7,6 +7,10 @@ A powerful Telegram bot for analyzing DeFi tokens, tracking wallets, and discove
 ## 🔎 **Your Ultimate DeFi Intelligence Bot!**
 Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰
 
+<p align="center">
+  <img src="https://github.com/dodger213/Crypto-DeFi-Analyze-Telegram-Bot/blob/main/src/image/main_menu.PNG" alt="Main Menu">
+</p>
+
 ## ✨ **What can I do for you?**
 
 ### 📊 **Token Analysis**
@@ -116,7 +120,7 @@ FREE_WALLET_SCANS_DAILY=3
 FREE_RESPONSE_DAILY = 2
 PREMIUM_RESPONSE_DAILY = 10
 
-WEB3_PROVIDER_URI="Your web3 provider uri"
+WEB3_PROVIDER_URI_KEY="Your web3 provider uri"
 ETHERSCAN_API_KEY="Your ethrescan api key"
 ```
 
