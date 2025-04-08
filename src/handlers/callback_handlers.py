@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, Any
 from datetime import datetime
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -7,15 +6,11 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 from config import FREE_TOKEN_SCANS_DAILY, FREE_RESPONSE_DAILY, FREE_WALLET_SCANS_DAILY, PREMIUM_RESPONSE_DAILY
-from data.database import (
-    get_wallet_data, get_profitable_wallets, get_profitable_deployers, 
-    get_all_kol_wallets, get_user_tracking_subscriptions, get_user
-)
+from data.database import (get_profitable_wallets, get_all_kol_wallets, get_user_tracking_subscriptions, get_user)
 from data.models import User, TrackingSubscription
 from data.database import *
 
 from services.blockchain import *
-from services.analytics import *
 from services.notification import *
 from services.user_management import *
 from services.payment import *
@@ -100,19 +95,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     elif callback_data.startswith("remove_tracking_"):
         target_address = callback_data.replace("remove_tracking_", "")
         await handle_remove_tracking(update, context, target_address)
-
-
-
-
-    
-
-    
-
-
-    
-    
-
-
     elif callback_data == "general_help":
         await handle_general_help(update, context)
     elif callback_data == "token_analysis_help":
@@ -140,56 +122,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         else:
             await query.answer("Invalid payment confirmation", show_alert=True)
         
-
-
-    # elif callback_data == "track_wallet_trades":
-    #     await handle_track_wallet_trades(update, context)
-    # elif callback_data == "track_wallet_deployments":
-    #     await handle_track_wallet_deployments(update, context)
-    # elif callback_data == "track_whale_sales":
-    #     await handle_track_whale_sales(update, context)
-    # elif callback_data == "more_kols":
-    #     await handle_more_kols(update, context)
-    # elif callback_data.startswith("export_td_"):
-    #     wallet_address = callback_data.replace("export_td_", "")
-    #     await handle_export_td(update, context, wallet_address)
-    # elif callback_data.startswith("export_th_"):
-    #     token_address = callback_data.replace("export_th_", "")
-    #     await handle_export_th(update, context, token_address)
-    # elif callback_data == "export_pw":
-    #     await handle_export_pw(update, context)
-    # elif callback_data == "export_hnw":
-    #     await handle_export_hnw(update, context)
-    # elif callback_data.startswith("track_deployer_"):
-    #     deployer_address = callback_data.replace("track_deployer_", "")
-    #     await handle_track_deployer(update, context, deployer_address)
-    # elif callback_data == "track_top_wallets":
-    #     await handle_track_top_wallets(update, context)
-    # elif callback_data == "track_hnw_wallets":
-    #     await handle_track_hnw_wallets(update, context)
-    # # elif callback_data.startswith("th_"):
-    # #     token_address = callback_data.replace("th_", "")
-    # #     await handle_th(update, context, token_address)
-    # # elif callback_data.startswith("dw_"):
-    # #     token_address = callback_data.replace("dw_", "")
-    # #     await handle_dw(update, context, token_address)
-    # # elif callback_data.startswith("track_token_"):
-    # #     token_address = callback_data.replace("track_token_", "")
-    # #     await handle_track_token(update, context, token_address)
-    # elif callback_data.startswith("track_wallet_"):
-    #     wallet_address = callback_data.replace("track_wallet_", "")
-    #     await handle_track_wallet(update, context, wallet_address)
-    # elif callback_data.startswith("trading_history_"):
-    #     wallet_address = callback_data.replace("trading_history_", "")
-    #     await handle_trading_history(update, context, wallet_address)
-    # elif callback_data.startswith("more_history_"):
-    #     wallet_address = callback_data.replace("more_history_", "")
-    #     await handle_more_history(update, context, wallet_address)
-    # elif callback_data.startswith("export_ptd"):
-    #     await handle_export_ptd(update, context)
-    # elif callback_data.startswith("export_mpw_"):
-    #     token_address = callback_data.replace("export_mpw_", "")
-    #     await handle_export_mpw(update, context, token_address)
     else:
         await query.answer(
             "Sorry, I couldn't process that request. Please try again.", show_alert=True
@@ -1065,32 +997,22 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
     
     welcome_message = (
-        f"🆘 Welcome to <b>Crypto DeFi Analyze Bot, {update.effective_user.first_name}! 🎉</b>\n\n"
-        f"🔎 <b>Your Ultimate DeFi Intelligence Bot!</b>\n"
-        f"Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰\n\n"
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"<b>📊 Token Analysis:</b>\n"
-        f"🔹 <b>First Buyers & Profits of a token:</b> See the first 1-50 buy wallets of a token with buy & sell amount, buy & sell trades, total trades and PNL and win rate. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Most Profitable Wallets of a token:</b> See the most profitable wallets in any specific token with total buy & sell amount and profit. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Market Cap & ATH:</b>See all time high (ATH) market cap of any token with date and percentage of current market cap from ATH marketcap. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Deployer Wallet Scan:</b> (Premium) Scan a token contract to reveal the deployer wallet and show other tokens ever deployed by the deployer wallet and their all time high (ATH) marketcap and how many X's they did. \n"
-        f"🔹 <b>Top Holders & Whale Watch:</b> (Premium) Scan a token contract to see top 10 holders, whale wallets holding the token.\n"
-        f"🔹 <b>High Net Worth Wallet Holders:</b> (Premium) See the high net worth wallet holders of any token with total worth of at least $10,000 showing total worth in USD, coins/tokens held and amount and average holding time of the wallet.\n\n"
-        f"<b>🕵️ Wallet Analysis:</b>\n"
-        f"🔹 <b>Most profitable wallets in a specific period:</b>See the most profitable wallets in 1 to 30 days with total buy amount and number of trades. (Free users get only 2 most profitable wallets from this query. Premium users get unlimited)\n"
-        f"🔹 <b>Wallet Holding Duration:</b> See how long a wallet holds a token before selling. (Maximum 3 wallet scans daily only for free users. Unlimited wallet scans daily for premium users)\n"
-        f"🔹 <b>Most profitable token deployer wallets:</b> See the most profitable token deployer wallets in 1 to 30 days. (Free users only get 2 most profitable token deployer wallets from this query. Premium users get unlimited)\n"
-        f"🔹 <b>Tokens Deployed by Wallet:</b> (Premium) See the tokens deployed by a particular wallet showing token name, ticker/symbol, current price, date of deployment, current market cap and All Time High (ATH) market cap.\n\n"
-        f"<b>🔔 Tracking & Monitoring:</b>\n"
-        f"🔹 <b>Track Buy/Sell Activity:</b> (Premium) Track a wallet to be notified when the wallet buys or sells any token.\n"
-        f"🔹 <b>Track New Token Deployments:</b> (Premium) Track a wallet to be notified when that wallet deploys a new token or any of the wallet it's connected to deploys a new token.\n"
-        f"🔹 <b>Profitable Wallets of any token:</b> (Premium) Track the profitable wallets in any token with total maximum number of trades, PNL, buy amount, sell amount, buy volume, sell volume, and win rate within 1 to 30 days.\n\n"
-        f"<b>🐳 KOL wallets:</b>\n"
-        f"🔹 <b>KOL Wallets Profitability:</b> Track KOL wallets profitability in 1-30 days with wallet name and PNL. (Maximum 3 scans daily only for free users. Unlimited scans daily for premium users)\n"
-        f"🔹 <b>Track Whale Wallets:</b> (Premium) Track when the Dev sells, any of the top 10 holders sell or any of the whale wallets sell that token.\n\n"
+        f"🆘 <b>Welcome to Crypto DeFi Analyze Bot, {update.effective_user.first_name}! 🎉</b>\n\n"
+        f"🔎 <b>Your DeFi Intelligence Hub</b>\n"
+        f"Get ahead in crypto with powerful tools for wallet tracking, token analytics, and market insights. 📊💰\n\n"
+        
+        f"✨ <b>Core Features:</b>\n"
+        f"• Token analysis, first buyers, PNL tracking, ATH market cap, deployer scan, top holders, high net worth wallets\n"
+        f"• Wallet analysis, holding duration, top deployers, wallet-deployed tokens, profitable wallet history\n"
+        f"• Real-time tracking for buys/sells, token deployments, and whale movements\n"
+        f"• KOL tracking, influencer wallet profits, whale and dev sell alerts\n\n"
+        
+        f"🆓 Free users enjoy limited daily scans\n"
+        f"💎 <b>Upgrade to Premium</b> for unlimited scans and full access to all features\n\n"
+
         f"Happy Trading! 🚀💰"
     )
-    
+
     keyboard_main = [
         [
             InlineKeyboardButton("📊 Token Analysis", callback_data="token_analysis"),
@@ -3054,10 +2976,6 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return
     
-    # Create tracking subscription
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    
     subscription = TrackingSubscription(
         user_id=user.user_id,
         tracking_type="wallet",
@@ -3067,7 +2985,6 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     
     # Save subscription
-    from data.database import save_tracking_subscription
     save_tracking_subscription(subscription)
     
     # Confirm to user
@@ -3077,221 +2994,3 @@ async def handle_track_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE
         f"deploys new tokens, or performs other notable actions.",
         parse_mode=ParseMode.MARKDOWN
     )
-
-async def handle_trading_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle trading history callback"""
-    query = update.callback_query
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Retrieving trading history... This may take a moment."
-    )
-    
-    try:
-        # Simulate getting trading history
-        # In a real implementation, you would query blockchain data
-        trading_history = [
-            {
-                "token": f"Token {i}",
-                "action": "Buy" if i % 3 != 0 else "Sell",
-                "amount": f"{i * 1000}",
-                "value": f"${i * 100}",
-                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
-            } for i in range(1, 8)
-        ]
-        
-        if not trading_history:
-            await query.edit_message_text(
-                "❌ No trading history found for this wallet."
-            )
-            return
-        
-        # Format the response
-        response = f"📈 <b>Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
-        
-        for i, trade in enumerate(trading_history, 1):
-            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
-            response += (
-                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
-                f"   Amount: {trade['amount']} tokens\n"
-                f"   Value: {trade['value']}\n"
-                f"   Date: {trade['date']}\n\n"
-            )
-        
-        # Add button to view more
-        keyboard = [
-            [InlineKeyboardButton("View More History", callback_data=f"more_history_{wallet_address}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_trading_history: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while retrieving trading history. Please try again later."
-        )
-
-async def handle_track_wallet_trades(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track wallet trades button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking wallet trades is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address you want to track for buys and sells.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for tracking trades
-    context.user_data["expecting"] = "track_wallet_trades_address"
-
-async def handle_track_wallet_deployments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track wallet deployments button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking wallet deployments is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter wallet address
-    await query.edit_message_text(
-        "Please send me the wallet address you want to track for new token deployments.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect wallet address for tracking deployments
-    context.user_data["expecting"] = "track_wallet_deployments_address"
-
-async def handle_track_whale_sales(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track whale sales button callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking whale and dev sales is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Prompt user to enter token address
-    await query.edit_message_text(
-        "Please send me the token contract address to track whale and dev sales.\n\n"
-        "Example: `0x1234...abcd`",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
-    # Set conversation state to expect token address for tracking whale sales
-    context.user_data["expecting"] = "track_whale_sales_token"
-
-async def handle_more_history(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle more trading history callback"""
-    query = update.callback_query
-    
-    # Send processing message
-    await query.edit_message_text(
-        "🔍 Retrieving more trading history... This may take a moment."
-    )
-    
-    try:
-        # Simulate getting more trading history
-        # In a real implementation, you would query blockchain data with pagination
-        trading_history = [
-            {
-                "token": f"Token {i}",
-                "action": "Buy" if i % 3 != 0 else "Sell",
-                "amount": f"{i * 1000}",
-                "value": f"${i * 100}",
-                "date": f"2023-{i % 12 + 1}-{i % 28 + 1}"
-            } for i in range(8, 20)  # Get next page of results
-        ]
-        
-        if not trading_history:
-            await query.edit_message_text(
-                "❌ No additional trading history found for this wallet."
-            )
-            return
-        
-        # Format the response
-        response = f"📈 <b>More Trading History for `{wallet_address[:6]}...{wallet_address[-4:]}`</b>\n\n"
-        
-        for i, trade in enumerate(trading_history, 8):  # Continue numbering from previous page
-            action_emoji = "🟢" if trade["action"] == "Buy" else "🔴"
-            response += (
-                f"{i}. {action_emoji} {trade['action']} {trade['token']}\n"
-                f"   Amount: {trade['amount']} tokens\n"
-                f"   Value: {trade['value']}\n"
-                f"   Date: {trade['date']}\n\n"
-            )
-        
-        # Add buttons for navigation
-        keyboard = [
-            [
-                InlineKeyboardButton("⬅️ Previous Page", callback_data=f"trading_history_{wallet_address}"),
-                InlineKeyboardButton("Next Page ➡️", callback_data=f"more_history_page2_{wallet_address}")
-            ],
-            [InlineKeyboardButton("Export Full History", callback_data=f"export_history_{wallet_address}")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-    
-    except Exception as e:
-        logging.error(f"Error in handle_more_history: {e}")
-        await query.edit_message_text(
-            "❌ An error occurred while retrieving more trading history. Please try again later."
-        )

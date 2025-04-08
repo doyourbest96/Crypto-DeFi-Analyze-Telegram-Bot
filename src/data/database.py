@@ -162,13 +162,6 @@ def get_tokens_by_deployer(deployer_address: str) -> List[TokenData]:
     tokens = db.token_data.find({"deployer": deployer_address.lower()})
     return [TokenData.from_dict(token) for token in tokens]
 
-# def get_wallet_data(address: str) -> Optional[WalletData]:
-#     """Get wallet data by address"""
-#     db = get_database()
-#     wallet_data = db.wallet_data.find_one({"address": address.lower()})
-#     if wallet_data:
-#         return WalletData.from_dict(wallet_data)
-#     return None
 
 def save_wallet_data(wallet: WalletData) -> None:
     """Save or update wallet data"""

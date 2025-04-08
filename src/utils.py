@@ -10,7 +10,6 @@ from data.models import User
 from config import FREE_WALLET_SCANS_DAILY
 
 from services.blockchain import * 
-from services.analytics import *
 from services.notification import *
 from services.user_management import *
 
