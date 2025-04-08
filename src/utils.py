@@ -151,6 +151,9 @@ async def handle_token_analysis_input(
         
         # Format the response
         response, keyboard = format_response_func(data, token_info, token_address)
+
+        if analysis_type == "top_holders":
+            keyboard.insert(0,[InlineKeyboardButton("🔔 Track Whale & Top Holder Sells", callback_data=f"setup_whale_tracking_{token_address}")])
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         success = False

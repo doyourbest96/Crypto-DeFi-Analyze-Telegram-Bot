@@ -206,7 +206,8 @@ class TrackingSubscription:
         target_address: str,
         created_at: Optional[datetime] = None,
         last_checked: Optional[datetime] = None,
-        is_active: bool = True
+        is_active: bool = True,
+        metadata=None
     ):
         self.user_id = user_id
         self.tracking_type = tracking_type
@@ -214,6 +215,7 @@ class TrackingSubscription:
         self.created_at = created_at or datetime.now()
         self.last_checked = last_checked or datetime.now()
         self.is_active = is_active
+        self.metadata = metadata or {}
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert tracking subscription to dictionary for database storage"""
@@ -223,7 +225,8 @@ class TrackingSubscription:
             "target_address": self.target_address,
             "created_at": self.created_at,
             "last_checked": self.last_checked,
-            "is_active": self.is_active
+            "is_active": self.is_active,
+            "metadata": self.metadata
         }
     
     @classmethod
@@ -235,7 +238,8 @@ class TrackingSubscription:
             target_address=data["target_address"],
             created_at=data.get("created_at"),
             last_checked=data.get("last_checked"),
-            is_active=data.get("is_active", True)
+            is_active=data.get("is_active", True),
+            metadata=data.get("metadata", {})
         )
 
 
