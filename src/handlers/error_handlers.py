@@ -19,7 +19,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Define developer chat ID for error reporting
 DEVELOPER_CHAT_ID = None  # Replace with your Telegram ID for error reporting
 
 async def error_handler(update: Optional[Update], context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -90,7 +89,6 @@ async def error_handler(update: Optional[Update], context: ContextTypes.DEFAULT_
                 parse_mode=ParseMode.HTML
             )
 
-# Specific error handlers
 async def handle_bad_request_error(update: Optional[Update], context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle BadRequest errors."""
     if update and update.effective_message:
