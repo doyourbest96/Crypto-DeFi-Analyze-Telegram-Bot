@@ -379,6 +379,11 @@ def format_deployer_wallet_scan_response(deployer_data: Dict[str, Any],
     # Get deployer address
     deployer_address = deployer_data.get("deployer_address", "Unknown")
     
+    # Get first and last deployment dates from deployed tokens if available
+    deployed_tokens = deployer_data.get("deployed_tokens", [])
+    first_deployment_date = deployed_tokens[-1].get("deploy_date", "N/A") if deployed_tokens else "N/A"
+    last_deployment_date = deployed_tokens[0].get("deploy_date", "N/A") if deployed_tokens else "N/A"
+    
     response = (
         f"🔎 <b>Deployer Wallet Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
         f"Contract: `{token_address}`\n"
@@ -386,30 +391,39 @@ def format_deployer_wallet_scan_response(deployer_data: Dict[str, Any],
         
         f"<b>Deployer Profile:</b>\n"
         f"• Tokens Deployed: {deployer_data.get('tokens_deployed', 'N/A')}\n"
-        f"• First Deployment: {deployer_data.get('first_deployment_date', 'N/A')}\n"
-        f"• Last Deployment: {deployer_data.get('last_deployment_date', 'N/A')}\n"
-        f"• Success Rate: {deployer_data.get('success_rate', 'N/A')}%\n"
-        f"• Avg. ROI: {deployer_data.get('avg_roi', 'N/A')}%\n"
-        f"• Rugpull History: {deployer_data.get('rugpull_count', 'N/A')} tokens\n"
-        f"• Risk Assessment: <b>{deployer_data.get('risk_level', 'Unknown')}</b>\n\n"
+        f"• First Deployment: {first_deployment_date}\n"
+        f"• Last Deployment: {last_deployment_date}\n\n"
         
         f"<b>Other Tokens by This Deployer:</b>\n"
     )
     
     # Add deployed tokens info
-    deployed_tokens = deployer_data.get("deployed_tokens", [])
     for i, token in enumerate(deployed_tokens[:5], 1):  # Show top 5 tokens
+        # Format market cap with commas
+        ath_market_cap = token.get('ath_market_cap', 0)
+        if isinstance(ath_market_cap, (int, float)):
+            ath_market_cap_formatted = f"${format_number(ath_market_cap)}"
+        else:
+            ath_market_cap_formatted = "N/A"
+            
         response += (
             f"{i}. {token.get('name', 'Unknown')} ({token.get('symbol', 'N/A')})\n"
+            f"   Token Address: {token.get('address', 'N/A')}\n"
             f"   Deploy Date: {token.get('deploy_date', 'N/A')}\n"
-            f"   ATH Market Cap: ${format_number(token.get('ath_mcap', 'N/A'))}\n"
+            f"   ATH Market Cap: {ath_market_cap_formatted}\n"
             f"   X-Multiplier: {token.get('x_multiplier', 'N/A')}\n"
-            f"   Status: {token.get('status', 'Unknown')}\n\n"
+            f"   TX: `{token.get('deployment_tx', 'N/A')}`\n\n"
         )
     
     # Add note if there are more tokens
     if len(deployed_tokens) > 5:
         response += f"<i>+ {len(deployed_tokens) - 5} more tokens</i>\n\n"
+    
+    # Add a note about the analysis
+    response += (
+        f"<i>Note: This analysis shows other tokens deployed by the same address. "
+        f"Review carefully before making investment decisions.</i>"
+    )
     
     keyboard = [
         [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
@@ -622,31 +636,40 @@ def format_wallet_holding_duration_response(data: dict, wallet_address: str) -> 
     Returns:
         Tuple of (formatted response text, keyboard buttons)
     """
-    response = (
-        f"⏳ <b>Wallet Holding Duration Analysis</b>\n\n"
-        f"👛 <b>Wallet:</b> `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
-        f"🌐 <b>Chain:</b> {data.get('chain', 'ETH').upper()}\n\n"
-        f"📊 <b>Average Holding Time:</b> {data.get('avg_holding_time_days', 'N/A')} days\n"
-        f"🔎 <b>Tokens Analyzed:</b> {data.get('tokens_analyzed', 'N/A')}\n\n"
-        f"📈 <b>Holding Duration Distribution:</b>\n"
-        f"• ⏱️ Less than 1 day: {data['holding_distribution'].get('less_than_1_day', 'N/A')}%\n"
-        f"• 📅 1 to 7 days: {data['holding_distribution'].get('1_to_7_days', 'N/A')}%\n"
-        f"• 🗓️ 7 to 30 days: {data['holding_distribution'].get('7_to_30_days', 'N/A')}%\n"
-        f"• 🏦 More than 30 days: {data['holding_distribution'].get('more_than_30_days', 'N/A')}%\n\n"
-        f"🔬 <b>Tokens Held:</b>\n"
-        f"These are the actual tokens this wallet has interacted with, providing a clear snapshot of its on-chain behavior. 🚀🔍\n\n"
-    )
-
-    
-    # Add example tokens
-    for i, token in enumerate(data.get('token_examples', [])[:5], 1):
-        profit_str = f"+${token['profit']}" if token['profit'] > 0 else f"-${abs(token['profit'])}"
-        response += (
-            f"{i}. {token.get('name', 'Unknown')} ({token.get('symbol', 'N/A')})\n"
-            f"   Held for: {token.get('holding_days', 'N/A')} days\n"
-            f"   Profit: {profit_str}\n\n"
+    # Check if there was an error
+    if "error" in data:
+        response = (
+            f"⏳ <b>Wallet Holding Duration Analysis</b>\n\n"
+            f"👛 <b>Wallet:</b> `{wallet_address}`\n"
+            f"🌐 <b>Chain:</b> {data.get('chain', 'ETH').upper()}\n\n"
+            f"❌ <b>Error:</b> {data.get('error', 'Unknown error occurred')}\n\n"
+            f"Please try again later or try a different wallet address."
         )
-    
+    else:
+        # Format the shortest and longest hold token info
+        shortest_token = data.get('shortest_hold_token', {})
+        longest_token = data.get('longest_hold_token', {})
+        
+        shortest_symbol = shortest_token.get('symbol') or "Unknown"
+        longest_symbol = longest_token.get('symbol') or "Unknown"
+        
+        shortest_address = shortest_token.get('address', 'N/A')
+        longest_address = longest_token.get('address', 'N/A')
+        
+        response = (
+            f"⏳ <b>Wallet Holding Duration Analysis</b>\n\n"
+            f"👛 <b>Wallet:</b> `{wallet_address}`\n"
+            f"🌐 <b>Chain:</b> {data.get('chain', 'ETH').upper()}\n\n"
+            f"📊 <b>Holding Time Statistics:</b>\n"
+            f"• Average: {data.get('avg_holding_time_days', 'N/A')}\n"
+            f"• Shortest: {data.get('shortest_holding_time', 'N/A')}\n"
+            f"• Longest: {data.get('longest_holding_time', 'N/A')}\n\n"
+            f"🔎 <b>Tokens Analyzed:</b> {data.get('total_tokens_analyzed', 'N/A')}\n\n"
+            f"🏆 <b>Notable Holdings:</b>\n"
+            f"• Shortest held: {shortest_symbol} ({shortest_address})\n"
+            f"• Longest held: {longest_symbol} ({longest_address})\n\n"
+        )
+
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
     
     return response, keyboard
@@ -676,11 +699,22 @@ def format_wallet_most_profitable_response(data: list, wallet_address: str = Non
     )
     
     for i, wallet in enumerate(data[:10], 1):
+        # Format win rate as percentage with one decimal place
+        win_rate = wallet.get('win_rate', 0)
+        if isinstance(win_rate, (int, float)):
+            win_rate_formatted = f"{win_rate:.1f}%"
+        else:
+            win_rate_formatted = "N/A"
+        
+        # Get total wins and losses
+        total_wins = wallet.get('total_wins', 'N/A')
+        total_losses = wallet.get('total_losses', 'N/A')
+        
         response += (
-            f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Profit: ${wallet.get('total_profit', 'N/A'):,.2f}\n"
-            f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n"
-            f"   Trades: {wallet.get('trades_count', 'N/A')}\n\n"
+            f"{i}. `{wallet['address']}`\n"
+            f"   💵 Profit: ${wallet.get('total_profit', 0):,.2f}\n"
+            f"   📊 Win Rate: {win_rate_formatted} ({total_wins}W/{total_losses}L)\n"
+            f"   🔄 Trades: {wallet.get('trades_count', 'N/A')}\n"
         )
     
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
@@ -707,16 +741,24 @@ def format_deployer_wallets_response(data: list, wallet_address: str = None) -> 
         f"🧪 <b>Most Profitable Token Deployer Wallets (Last {period_days} Days)</b>\n"
         f"🔗 Chain: <b>{chain}</b>\n\n"
         f"🚀 These wallet addresses have been busy deploying tokens and cashing in big over the last {period_days} days. "
-        f"They’re not just developers — they’re trendsetters, launching tokens that gain traction fast! 💸📊\n\n"
-        f"🔥 Let’s take a closer look at the top-performing deployers who are making serious moves in the ecosystem.\n\n"
-    ) 
+        f"They're not just developers — they're trendsetters, launching tokens that gain traction fast! 💸📊\n\n"
+        f"🔥 Let's take a closer look at the top-performing deployers who are making serious moves in the ecosystem.\n\n"
+    )
     
     for i, wallet in enumerate(data[:10], 1):
+        
+        total_buy_usd = wallet.get('total_buy_usd', 'N/A')
+        total_sell_usd = wallet.get('total_sell_usd', 'N/A')
+        # Get win/loss data
+        win_rate = wallet.get('win_rate', 'N/A')
+        total_wins = wallet.get('total_wins', 'N/A')
+        total_losses = wallet.get('total_losses', 'N/A')
+        
         response += (
-            f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Tokens Deployed: {wallet.get('tokens_deployed', 'N/A')}\n"
-            f"   Success Rate: {wallet.get('success_rate', 'N/A')}%\n"
-            f"   Profit: ${wallet.get('total_profit', 'N/A'):,.2f}\n\n"
+            f"{i}. `{wallet['address']}`\n"
+            f"   💰 Profit: ${wallet.get('total_profit', 0):,.2f}\n"
+            f"   📊 Success Rate: {win_rate} ({total_wins}W/{total_losses}L)\n"
+            f"   📉 Buy Vol: ${total_buy_usd:.2f}M | 📈 Sell Vol: ${total_sell_usd:.2f}M\n\n"
         )
     
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
@@ -738,7 +780,7 @@ def format_tokens_deployed_response(data: list, wallet_address: str) -> tuple:
     
     response = (
         f"🚀 <b>Tokens Deployed by Wallet</b>\n\n"
-        f"👤 <b>Deployer:</b> `{wallet_address[:6]}...{wallet_address[-4:]}`\n"
+        f"👤 <b>Deployer:</b> `{wallet_address}`\n"
         f"🌐 <b>Chain:</b> {chain}\n"
         f"🧬 <b>Total Tokens Deployed:</b> {len(data)}\n\n"
         f"🔍 This wallet has been actively creating tokens on {chain}, possibly experimenting, launching new projects, or fueling DeFi/NFT ecosystems. "
@@ -748,10 +790,11 @@ def format_tokens_deployed_response(data: list, wallet_address: str) -> tuple:
     for i, token in enumerate(data[:5], 1):
         response += (
             f"{i}. {token.get('name', 'Unknown')} ({token.get('symbol', 'N/A')})\n"
-            f"   Deployed: {token.get('deploy_date', 'N/A')}\n"
-            f"   Current Price: ${token.get('current_price', 'N/A')}\n"
+            f"   Contract Address: {token.get('address', 'N/A')}\n"
+            f"   Deploy Date: {token.get('deploy_date', 'N/A')}\n"
             f"   Market Cap: ${token.get('current_market_cap', 'N/A'):,.2f}\n"
-            f"   ATH Multiple: {token.get('ath_multiplier', 'N/A')}x\n\n"
+            f"   ATH Market Cap: ${token.get('ath_market_cap', 'N/A'):,.2f}\n"
+            f"   ATH Date: {token.get('ath_date', 'N/A')}x\n\n"
         )
     
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="wallet_analysis")]]
