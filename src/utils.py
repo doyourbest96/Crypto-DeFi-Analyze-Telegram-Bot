@@ -219,7 +219,8 @@ async def get_token_info(token_address: str, chain: str = "eth") -> Optional[Dic
         ]
         
         # Create contract instance
-        contract = w3.eth.contract(address=token_address, abi=abi)
+        checksum_address = w3.to_checksum_address(token_address)
+        contract = w3.eth.contract(address=checksum_address, abi=abi)
         
         # Get basic token information
         name = contract.functions.name().call()
