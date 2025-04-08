@@ -56,6 +56,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_deployer_wallet_scan(update, context)
     elif callback_data == "token_top_holders":
         await handle_top_holders(update, context)
+    elif callback_data.startswith("setup_whale_tracking_"):
+        await handle_setup_whale_tracking(update, context)
     elif callback_data == "token_high_net_worth_holders":
         await handle_high_net_worth_holders(update, context)
     elif callback_data == "wallet_most_profitable_in_period":
@@ -198,6 +200,161 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             error_message_text="❌ An error occurred while analyzing the token's top holders. Please try again later.",
             no_data_message_text="❌ Could not find top holders data for this token."
         )
+
+    elif expecting == "track_whale_wallets_token":
+        token_address = update.message.text.strip()
+        
+        # Validate address format
+        if not await is_valid_address(token_address):
+            await update.message.reply_text(
+                f"❌ <b>Invalid Token Address</b>\n\n"
+                f"Please provide a valid Ethereum token address starting with 0x and containing 42 characters.",
+                parse_mode=ParseMode.HTML
+            )
+            return
+        
+        # Send processing message
+        processing_message = await update.message.reply_text(
+            "🔍 Analyzing token's top holders and whale wallets... This may take a moment."
+        )
+        
+        try:
+            chain=context.user_data.get("default_network", "eth")
+            token_info = await get_token_info(token_address, chain)
+            
+            if not token_info:
+                await processing_message.edit_text(
+                    "❌ Could not find information for this token. Please check the address and try again."
+                )
+                return
+            
+            # Get top holders for this token
+            top_holders = await get_token_top_holders(token_address, limit=10)
+            
+            if not top_holders:
+                await processing_message.edit_text(
+                    "❌ Could not find top holders for this token at this time."
+                )
+                return
+            
+            # Get deployer wallet
+            deployer_info = await get_deployer_wallet_scan_data(token_address, chain)
+            deployer_wallet = deployer_info.get("deployer_address") if deployer_info else None
+            
+            # Create token tracking subscription with metadata
+            token_subscription = TrackingSubscription(
+                user_id=update.effective_user.id,
+                tracking_type="token_whale_tracking",
+                target_address=token_address,
+                is_active=True,
+                created_at=datetime.now(),
+                metadata={
+                    "token_name": token_info.get("name", "Unknown"),
+                    "token_symbol": token_info.get("symbol", "Unknown"),
+                    "deployer": deployer_wallet
+                }
+            )
+            save_tracking_subscription(token_subscription)
+            
+            # Track deployer wallet if available
+            if deployer_wallet:
+                deployer_subscription = TrackingSubscription(
+                    user_id=update.effective_user.id,
+                    tracking_type="wallet_trades",
+                    target_address=deployer_wallet,
+                    is_active=True,
+                    created_at=datetime.now(),
+                    metadata={
+                        "role": "deployer",
+                        "token": token_address,
+                        "token_name": token_info.get("name", "Unknown"),
+                        "token_symbol": token_info.get("symbol", "Unknown")
+                    }
+                )
+                save_tracking_subscription(deployer_subscription)
+            
+            # Track top holders
+            for holder in top_holders:
+                holder_subscription = TrackingSubscription(
+                    user_id=update.effective_user.id,
+                    tracking_type="wallet_trades",
+                    target_address=holder["address"],
+                    is_active=True,
+                    created_at=datetime.now(),
+                    metadata={
+                        "role": "top_holder",
+                        "token": token_address,
+                        "token_name": token_info.get("name", "Unknown"),
+                        "token_symbol": token_info.get("symbol", "Unknown"),
+                        "percentage": holder.get("percentage", 0)
+                    }
+                )
+                save_tracking_subscription(holder_subscription)
+            
+            # Format the response
+            response = (
+                f"✅ <b>Whale Tracking Set Up Successfully!</b>\n\n"
+                f"You are now actively monitoring the behavior of whales and top holders for the token:\n"
+                f"<b>{token_info.get('name', 'Unknown')}</b> ({token_info.get('symbol', 'N/A')})\n"
+                f"`{token_address[:6]}...{token_address[-4:]}`\n\n"
+                f"🔔 Stay ahead of sudden market shifts, early exits, and accumulation patterns to make smarter decisions based on real-time wallet activity!\n\n"
+
+            )
+
+            response = (
+                f"✅ <b>Whale Tracking Has Been Successfully Set Up!</b>\n\n"
+                f"You are now actively monitoring the behavior of whales and top holders for the token:\n"
+                f"<b>{token_info.get('name', 'Unknown')}</b> (<code>{token_info.get('symbol', 'N/A')}</code>)\n"
+                f"<code>{token_address[:6]}...{token_address[-4:]}</code>\n\n"
+                f"This means you'll receive timely notifications whenever the developer, any of the top 10 holders, or major whale wallets make a significant move—"
+                f"whether it's buying, selling, or offloading tokens.\n\n"
+                f"🔔 Stay ahead of sudden market shifts, early exits, and accumulation patterns to make smarter decisions based on real-time wallet activity!"
+            )
+            
+            if deployer_wallet:
+                response += (
+                    f"<b>🧑‍💻 Deployer Wallet:</b>\n"
+                    f"`{deployer_wallet[:6]}...{deployer_wallet[-4:]}`\n\n"
+                )
+            
+            response += "<b>🐳 Top Holders Being Tracked:</b>\n"
+            
+            for i, holder in enumerate(top_holders[:5], 1):  # Show first 5 for brevity
+                percentage = holder.get('percentage', 0)
+                response += (
+                    f"{i}. `{holder['address'][:6]}...{holder['address'][-4:]}`\n"
+                    f"   Holdings: {percentage:.2f}% of supply\n"
+                )
+            
+            if len(top_holders) > 5:
+                response += f"\n...and {len(top_holders) - 5} more holders\n"
+            
+            response += (
+                f"\n<b>🚨 You will receive alerts when:</b>\n"
+                f"• The developer sells tokens\n"
+                f"• Any of the top 10 holders sell\n"
+                f"• Any whale wallet dumps the token"
+            )
+            
+            # Add button to view all tracking subscriptions
+            keyboard = [
+                [InlineKeyboardButton("👁️ View All Tracking", callback_data="view_tracking_subscriptions")],
+                [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await processing_message.edit_text(
+                response,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.HTML
+            )
+            
+        except Exception as e:
+            logging.error(f"Error in handle_whale_tracking_input: {e}")
+            await processing_message.edit_text(
+                "❌ An error occurred while setting up whale tracking. Please try again later."
+            )
+
     
     elif expecting == "high_net_worth_holders_token_address":
         await handle_token_analysis_input(
@@ -510,12 +667,6 @@ async def handle_kol_wallets_help(update: Update, context: ContextTypes.DEFAULT_
         "<b>📊 KOL Wallets Profitability</b>\n"
         "🔹 Track influencer wallets' PNL over 1–30 days.\n"
         "   - (Free: 3 scans/day, Premium: Unlimited)\n\n"
-
-        "<b>🚨 Whale & Dev Sell Alerts</b> (Premium)\n"
-        "🔹 Get alerts when:\n"
-        "   - The developer sells\n"
-        "   - Any top 10 holder sells\n"
-        "   - Any whale wallet dumps the token\n"
     )
 
     keyboard = [
@@ -806,12 +957,10 @@ async def handle_kol_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE)
     welcome_message = (
         f"✨ Welcome to <b>🐳 KOL wallets</b>\n\n"
         f"🔹 <b>KOL Wallets Profitability:</b> Track KOL wallets profitability in 1-30 days with wallet name and PNL. (Maximum 3 scans daily only for free users. Unlimited scans daily for premium users)\n\n"
-        f"🔹 <b>Track Whale Wallets:</b> (Premium) Track when the Dev sells, any of the top 10 holders sell or any of the whale wallets sell that token\n\n"
         f"Happy Trading! 🚀💰"
     )
     token_analysis_keyboard = [
         [InlineKeyboardButton("📢 KOL Wallets Profitability", callback_data="kol_wallet_profitability")],
-        [InlineKeyboardButton("🐳 Track Whalet Wallets(Premium)", callback_data="track_whale_wallets")],
         [
             InlineKeyboardButton("❓ Help", callback_data="kol_wallets_help"),
             InlineKeyboardButton("🔙 Back", callback_data="back")
@@ -833,6 +982,133 @@ async def handle_kol_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
+
+async def handle_setup_whale_tracking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle setup whale tracking callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
+    
+    callback_data = query.data
+    token_address = callback_data.replace("setup_whale_tracking_", "")
+    
+    await query.answer("Setting up tracking...")
+    processing_message = await query.message.reply_text(
+        "🔄 Setting up whale and top holder tracking... This may take a moment."
+    )
+    
+    try:
+        chain=context.user_data.get("default_network", "eth")
+        token_info = await get_token_info(token_address)
+        
+        top_holders = await get_token_top_holders(token_address, chain)
+        
+        # Get deployer wallet
+        deployer_info = await get_deployer_wallet_scan_data(token_address, chain)
+        deployer_wallet = deployer_info.get("deployer_address") if deployer_info else None
+        
+        # Create token tracking subscription with metadata
+        token_subscription = TrackingSubscription(
+            user_id=user.user_id,
+            tracking_type="token_whale_tracking",
+            target_address=token_address,
+            is_active=True,
+            created_at=datetime.now(),
+            metadata={
+                "token_name": token_info.get("name", "Unknown"),
+                "token_symbol": token_info.get("symbol", "Unknown"),
+                "deployer": deployer_wallet
+            }
+        )
+        save_tracking_subscription(token_subscription)
+        
+        # Track deployer wallet if available
+        if deployer_wallet:
+            deployer_subscription = TrackingSubscription(
+                user_id=user.user_id,
+                tracking_type="wallet_trades",
+                target_address=deployer_wallet,
+                is_active=True,
+                created_at=datetime.now(),
+                metadata={
+                    "role": "deployer",
+                    "token": token_address,
+                    "token_name": token_info.get("name", "Unknown"),
+                    "token_symbol": token_info.get("symbol", "Unknown")
+                }
+            )
+            save_tracking_subscription(deployer_subscription)
+        
+        # Track top holders
+        for holder in top_holders:
+            holder_subscription = TrackingSubscription(
+                user_id=user.user_id,
+                tracking_type="wallet_trades",
+                target_address=holder["address"],
+                is_active=True,
+                created_at=datetime.now(),
+                metadata={
+                    "role": "top_holder",
+                    "token": token_address,
+                    "token_name": token_info.get("name", "Unknown"),
+                    "token_symbol": token_info.get("symbol", "Unknown"),
+                    "percentage": holder.get("percentage", 0)
+                }
+            )
+            save_tracking_subscription(holder_subscription)
+        
+        # Format confirmation message
+        response = (
+            f"✅ <b>Whale Tracking Set Up Successfully!</b>\n\n"
+            f"Now tracking whales and top holders for token:\n"
+            f"<b>{token_info.get('name', 'Unknown')}</b> ({token_info.get('symbol', 'N/A')})\n"
+            f"`{token_address[:6]}...{token_address[-4:]}`\n\n"
+        )
+        
+        if deployer_wallet:
+            response += (
+                f"<b>🧑‍💻 Deployer Wallet:</b>\n"
+                f"`{deployer_wallet[:6]}...{deployer_wallet[-4:]}`\n\n"
+            )
+        
+        response += "<b>🐳 Top Holders Being Tracked:</b>\n"
+        
+        for i, holder in enumerate(top_holders[:5], 1):  # Show first 5 for brevity
+            percentage = holder.get('percentage', 0)
+            response += (
+                f"{i}. `{holder['address'][:6]}...{holder['address'][-4:]}`\n"
+                f"   Holdings: {percentage:.2f}% of supply\n"
+            )
+        
+        if len(top_holders) > 5:
+            response += f"\n...and {len(top_holders) - 5} more holders\n"
+        
+        response += (
+            f"\n<b>🚨 You will receive alerts under the following conditions:</b>\n"
+            f"• When the project’s developer decides to sell a portion or all of their tokens, indicating a potential shift in confidence or strategy.\n"
+            f"• When any of the top 10 largest holders initiate a sell-off, which could signal major market movements or sentiment changes.\n"
+            f"• When a known whale wallet — a large and influential holder — begins dumping the token in significant volumes, which might lead to volatility or price drops."
+        )
+        
+        # Add button to view all tracking subscriptions
+        keyboard = [
+            [InlineKeyboardButton("👁️ View All Tracking", callback_data="view_tracking_subscriptions")],
+            [InlineKeyboardButton("🔙 Back", callback_data="token_analysis")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await processing_message.edit_text(
+            response,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        
+    except Exception as e:
+        logging.error(f"Error in handle_setup_whale_tracking: {e}")
+        await processing_message.edit_text(
+            "❌ An error occurred while setting up whale tracking. Please try again later."
+        )
+
+
 
 # token analysis handlers
 async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
