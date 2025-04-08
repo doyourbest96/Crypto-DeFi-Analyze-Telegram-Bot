@@ -126,445 +126,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await query.answer(
             "Sorry, I couldn't process that request. Please try again.", show_alert=True
         )
-  
-async def handle_more_kols(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle more KOLs callback"""
-    query = update.callback_query
-    
-    # Get KOL wallets data
-    kol_wallets = await get_all_kol_wallets()
-    
-    if not kol_wallets:
-        await query.edit_message_text(
-            "❌ Could not find KOL wallet data at this time."
-        )
-        return
-    
-    # Format the response with more KOLs
-    response = f"👑 <b>KOL Wallets Profitability Analysis</b>\n\n"
-    
-    for i, wallet in enumerate(kol_wallets, 1):  # Show all KOLs
-        response += (
-            f"{i}. {wallet.get('name', 'Unknown KOL')}\n"
-            f"   Wallet: `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n"
-            f"   Profit: ${wallet.get('total_profit', 'N/A')}\n\n"
-        )
-    
-    # Add button to export data
-    keyboard = [
-        [InlineKeyboardButton("Export Full Data", callback_data="export_kols")],
-        [InlineKeyboardButton("🔙 Back", callback_data="back")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    try:
-        # Try to edit the current message
-        await query.edit_message_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-    )
-    except Exception as e:
-        logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
-        await query.message.reply_text(
-            response,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        # Delete the original message if possible
-        try:
-            await query.message.delete()
-        except:
-            pass
-
-async def handle_export_mpw(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
-    """Handle export most profitable wallets callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        f"Most profitable wallets data for token {token_address[:6]}...{token_address[-4:]} "
-        "has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_export_ptd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle export profitable token deployers callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        "Profitable token deployers data has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_export_td(update: Update, context: ContextTypes.DEFAULT_TYPE, wallet_address: str) -> None:
-    """Handle export tokens deployed callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        f"Tokens deployed by wallet {wallet_address[:6]}...{wallet_address[-4:]} "
-        "has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_export_th(update: Update, context: ContextTypes.DEFAULT_TYPE, token_address: str) -> None:
-    """Handle export token holders callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        f"Token holders data for {token_address[:6]}...{token_address[-4:]} "
-        "has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_export_pw(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle export profitable wallets callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        "Profitable wallets data has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_export_hnw(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle export high net worth wallets callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Exporting data is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate export process
-    await query.edit_message_text(
-        "🔄 Preparing your export... This may take a moment."
-    )
-    
-    # In a real implementation, you would generate and send a file here
-    # For now, we'll just simulate the process
-    
-    await query.edit_message_text(
-        "✅ <b>Export Complete</b>\n\n"
-        "High net worth wallets data has been exported and sent to your email address.",
-        parse_mode=ParseMode.HTML
-    )
-
-async def handle_track_deployer(update: Update, context: ContextTypes.DEFAULT_TYPE, deployer_address: str) -> None:
-    """Handle track deployer callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking deployers is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Create tracking subscription
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    
-    subscription = TrackingSubscription(
-        user_id=user.user_id,
-        tracking_type="deployer",
-        target_address=deployer_address,
-        is_active=True,
-        created_at=datetime.now()
-    )
-    
-    # Save subscription
-    from data.database import save_tracking_subscription
-    save_tracking_subscription(subscription)
-    
-    # Confirm to user
-    await query.edit_message_text(
-        f"✅ Now tracking deployer wallet: `{deployer_address[:6]}...{deployer_address[-4:]}`\n\n"
-        f"You will receive notifications when this deployer creates new tokens or when "
-        f"significant events occur with their tokens.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-async def handle_track_top_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track top wallets callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking top wallets is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Get top wallets to track
-    profitable_wallets = await get_profitable_wallets(30, 5)  # Get top 5 wallets
-    
-    if not profitable_wallets:
-        await query.edit_message_text(
-            "❌ Could not find profitable wallets to track at this time."
-        )
-        return
-    
-    # Create tracking subscriptions for top wallets
-    from data.models import TrackingSubscription
-    from datetime import datetime
-    from data.database import save_tracking_subscription
-    
-    for wallet in profitable_wallets:
-        subscription = TrackingSubscription(
-            user_id=user.user_id,
-            tracking_type="wallet",
-            target_address=wallet["address"],
-            is_active=True,
-            created_at=datetime.now()
-        )
-        save_tracking_subscription(subscription)
-    
-    # Confirm to user
-    response = f"✅ Now tracking top 5 profitable wallets:\n\n"
-    
-    for i, wallet in enumerate(profitable_wallets[:5], 1):
-        response += (
-            f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n\n"
-        )
-    
-    response += "You will receive notifications when these wallets make significant trades."
-    
-    await query.edit_message_text(
-        response,
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-async def handle_track_hnw_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle track high net worth wallets callback"""
-    query = update.callback_query
-    user = await check_callback_user(update)
-    
-    # Check if user is premium
-    if not user.is_premium:
-        keyboard = [
-            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "⭐ <b>Premium Feature</b>\n\n"
-            "Tracking high net worth wallets is only available to premium users.\n\n"
-            "💎 Upgrade to premium to unlock all features!",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Simulate getting HNW wallets to track
-    hnw_wallets = [
-        {"address": f"0x{i}abc123def456", "net_worth": i * 1000000} 
-        for i in range(1, 6)
-    ]
-    
-    if not hnw_wallets:
-        await query.edit_message_text(
-            "❌ Could not find high net worth wallets to track at this time."
-        )
-        return
-        
-    for wallet in hnw_wallets:
-        subscription = TrackingSubscription(
-            user_id=user.user_id,
-            tracking_type="wallet",
-            target_address=wallet["address"],
-            is_active=True,
-            created_at=datetime.now()
-        )
-        save_tracking_subscription(subscription)
-    
-    # Confirm to user
-    response = f"✅ Now tracking top 5 high net worth wallets:\n\n"
-    
-    for i, wallet in enumerate(hnw_wallets[:5], 1):
-        response += (
-            f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Net Worth: ${wallet.get('net_worth', 'N/A'):,}\n\n"
-        )
-    
-    response += "You will receive notifications when these wallets make significant trades."
-    
-    await query.edit_message_text(
-        response,
-        parse_mode=ParseMode.MARKDOWN
-    )
 
 async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle expected inputs from conversation states"""
@@ -1127,16 +688,14 @@ async def handle_token_analysis(update:Update, context:ContextTypes.DEFAULT_TYPE
         return
 
     welcome_message = (
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"<b>📊 Token Analysis:</b>\n\n"
-        f"🔹 <b>First Buyers & Profits of a token:</b> See the first 1-50 buy wallets of a token with buy & sell amount, buy & sell trades, total trades and PNL and win rate. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Most Profitable Wallets of a token:</b> Most profitable wallets in any specific token with total buy & sell amount and profit. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Market Cap & ATH:</b>All time high (ATH) market cap of any token with date and percentage of current market cap from ATH marketcap. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n"
-        f"🔹 <b>Deployer Wallet Scan:</b> (Premium) Scan a token contract to reveal the deployer wallet and show other tokens ever deployed by the deployer wallet and their all time high (ATH) marketcap and how many X's they did.\n"
-        f"🔹 <b>Top Holders & Whale Watch:</b> (Premium) Scan a token contract to see top 10 holders, whale wallets holding the token.\n"
-        f"🔹 <b>High Net Worth Wallet Holders:</b> (Premium) High net worth wallet holders of any token with total worth of at least $10,000 showing total worth in USD, coins/tokens held and amount and average holding time of the wallet.\n"
-        f"🔹 <b>💎 Upgrade to Premium:</b> Unlock unlimited scans and premium features.\n"
-        f"🔹 <b>Show Help:</b> Display this help menu anytime.\n\n"
+        f"✨ Welcome to <b>📊 Token Analysis:</b>\n\n"
+        f"🔹 <b>First Buyers & Profits of a token:</b> See the first 1-50 buy wallets of a token with buy & sell amount, buy & sell trades, total trades and PNL and win rate. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n\n"
+        f"🔹 <b>Most Profitable Wallets of a token:</b> Most profitable wallets in any specific token with total buy & sell amount and profit. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n\n"
+        f"🔹 <b>Market Cap & ATH:</b>All time high (ATH) market cap of any token with date and percentage of current market cap from ATH marketcap. (Maximum 3 token scans daily only for free users. Unlimited token scans daily for premium users)\n\n"
+        f"🔹 <b>Deployer Wallet Scan:</b> (Premium) Scan a token contract to reveal the deployer wallet and show other tokens ever deployed by the deployer wallet and their all time high (ATH) marketcap and how many X's they did.\n\n"
+        f"🔹 <b>Top Holders & Whale Watch:</b> (Premium) Scan a token contract to see top 10 holders, whale wallets holding the token.\n\n"
+        f"🔹 <b>High Net Worth Wallet Holders:</b> (Premium) High net worth wallet holders of any token with total worth of at least $10,000 showing total worth in USD, coins/tokens held and amount and average holding time of the wallet.\n\n"
+        f"🔹 <b>💎 Upgrade to Premium:</b> Unlock unlimited scans and premium features.\n\n"
         f"Happy Trading! 🚀💰"
     )
 
@@ -1173,13 +732,11 @@ async def handle_wallet_analysis(update:Update, context:ContextTypes.DEFAULT_TYP
     """Handle wallet analysis button"""
     
     welcome_message = (
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"<b>🕵️ Wallet Analysis:</b>\n\n"
-        f"🔹 <b>Most profitable wallets in a specific period:</b>Most profitable wallets in 1 to 30 days with total buy amount and number of trades. (Free users get only 2 most profitable wallets from this query. Premium users get unlimited)\n"
-        f"🔹 <b>Wallet Holding Duration:</b> See how long a wallet holds a token before selling. (Maximum 3 wallet scans daily only for free users. Unlimited wallet scans daily for premium users)\n"
-        f"🔹 <b>Most profitable token deployer wallets:</b> See the most profitable token deployer wallets in 1 to 30 days. (Free users only get 2 most profitable token deployer wallets from this query. Premium users get unlimited)\n"
+        f"✨ Welcome to <b>🕵️ Wallet Analysis:</b>\n\n"
+        f"🔹 <b>Most profitable wallets in a specific period:</b>Most profitable wallets in 1 to 30 days with total buy amount and number of trades. (Free users get only 2 most profitable wallets from this query. Premium users get unlimited)\n\n"
+        f"🔹 <b>Wallet Holding Duration:</b> See how long a wallet holds a token before selling. (Maximum 3 wallet scans daily only for free users. Unlimited wallet scans daily for premium users)\n\n"
+        f"🔹 <b>Most profitable token deployer wallets:</b> See the most profitable token deployer wallets in 1 to 30 days. (Free users only get 2 most profitable token deployer wallets from this query. Premium users get unlimited)\n\n"
         f"🔹 <b>Tokens Deployed by Wallet:</b> (Premium) See the tokens deployed by a particular wallet showing token name, ticker/symbol, current price, date of deployment, current market cap and All Time High (ATH) market cap.\n\n"
-        f"🔹 <b>Show Help:</b> Display this help menu anytime.\n\n"
         f"Happy Trading! 🚀💰"
     )
     wallet_tracking_keyboard = [
@@ -1212,12 +769,10 @@ async def handle_wallet_analysis(update:Update, context:ContextTypes.DEFAULT_TYP
 async def handle_tracking_and_monitoring(update:Update, context:ContextTypes.DEFAULT_TYPE)->None: 
     """Handle tracking and monitoring button"""
     welcome_message = (
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"<b>🔔 Tracking & Monitoring:</b>\n\n"
-        f"🔹 <b>Track Buy/Sell Activity:</b> (Premium) Track a wallet to be notified when the wallet buys or sells any token.\n"
-        f"🔹 <b>Track New Token Deployments:</b> (Premium) Track a wallet to be notified when that wallet deploys a new token or any of the wallet it's connected to deploys a new token.\n"
-        f"🔹 <b>Profitable Wallets of any token:</b> (Premium) Track the profitable wallets in any token with total maximum number of trades, PNL, buy amount, sell amount, buy volume, sell volume, and win rate within 1 to 30 days.\n"
-        f"🔹 <b>Show Help:</b> Display this help menu anytime.\n\n"
+        f"✨ Welcome to <b>🔔 Tracking & Monitoring</b>\n\n"
+        f"🔹 <b>Track Buy/Sell Activity:</b> (Premium) Track a wallet to be notified when the wallet buys or sells any token.\n\n"
+        f"🔹 <b>Track New Token Deployments:</b> (Premium) Track a wallet to be notified when that wallet deploys a new token or any of the wallet it's connected to deploys a new token.\n\n"
+        f"🔹 <b>Profitable Wallets of any token:</b> (Premium) Track the profitable wallets in any token with total maximum number of trades, PNL, buy amount, sell amount, buy volume, sell volume, and win rate within 1 to 30 days.\n\n"
         f"Happy Trading! 🚀💰"
     )
 
@@ -1251,11 +806,9 @@ async def handle_tracking_and_monitoring(update:Update, context:ContextTypes.DEF
 async def handle_kol_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle kol wallets button"""
     welcome_message = (
-        f"✨ <b>What can I do for you?</b>\n\n"
-        f"<b>🐳 KOL wallets:</b>\n\n"
-        f"🔹 <b>KOL Wallets Profitability:</b> Track KOL wallets profitability in 1-30 days with wallet name and PNL. (Maximum 3 scans daily only for free users. Unlimited scans daily for premium users)\n"
-        f"🔹 <b>Track Whale Wallets:</b> (Premium) Track when the Dev sells, any of the top 10 holders sell or any of the whale wallets sell that token\n"
-        f"🔹 <b>Show Help:</b> Display this help menu anytime.\n\n"
+        f"✨ Welcome to <b>🐳 KOL wallets</b>\n\n"
+        f"🔹 <b>KOL Wallets Profitability:</b> Track KOL wallets profitability in 1-30 days with wallet name and PNL. (Maximum 3 scans daily only for free users. Unlimited scans daily for premium users)\n\n"
+        f"🔹 <b>Track Whale Wallets:</b> (Premium) Track when the Dev sells, any of the top 10 holders sell or any of the whale wallets sell that token\n\n"
         f"Happy Trading! 🚀💰"
     )
     token_analysis_keyboard = [
@@ -1304,12 +857,8 @@ async def handle_first_buyers(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.message.reply_text(
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily scans for <b>First Buyers Analysis</b>.\n"
-            f"This tool lets you discover who bought early, how much they earned, and their trading behavior. Great for identifying smart money moves! 💸\n\n"
-            f"💎 <b>Upgrade to Premium</b> for unlimited scans and deeper DeFi intelligence:\n"
-            f"• Analyze unlimited tokens 🔄\n"
-            f"• Track early buyers & their profit trends 📈\n"
-            f"• Get wallet insights, market cap data, and more! 🚀\n\n"
-            f"🔓 Unlock the full potential of Crypto DeFi Analyze with Premium access!",
+            f"This feature lets you discover who bought early, how much they earned, and their trading behavior. Great for identifying smart money moves! 💸\n\n"
+            f"💎 <b>Upgrade to Premium</b> for unlimited scans and deeper DeFi intelligence:\n",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1338,11 +887,7 @@ async def handle_token_most_profitable_wallets(update: Update, context: ContextT
             f"⚠️ <b>Daily Limit Reached</b>\n\n"
             f"📊 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> daily scans for <b>Most Profitable Wallets</b>.\n"
             f"This feature helps you uncover top-performing wallets in any token — who's buying, who's profiting, and how much! 🧠💰\n\n"
-            f"💎 <b>Premium users enjoy unlimited scans</b> and access to full profitability metrics:\n"
-            f"• Unlimited wallet analysis 🔍\n"
-            f"• Identify winning traders and copy their strategy 📥\n"
-            f"• Gain edge over the market with real wallet data 🧩\n\n"
-            f"🚀 Ready to level up? <b>Unlock Premium now!</b>",
+            f"💎 <b>Premium users enjoy unlimited scans</b> and access to full profitability metrics:\n",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1373,11 +918,6 @@ async def handle_ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             f"🚫 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily token scans.\n"
             f"Free users can analyze up to {FREE_TOKEN_SCANS_DAILY} tokens each day to explore market caps, trends, and ATH insights.\n\n"
             f"💎 <b>Premium users get unlimited scans</b> — no restrictions, no waiting!\n"
-            f"Unlock powerful features like:\n"
-            f"• Unlimited token & wallet scans 🔍\n"
-            f"• Full deployer history & token performance 🧠\n"
-            f"• Real-time tracking alerts 📡\n"
-            f"• Whale & KOL wallet monitoring 🐋\n\n"
             f"🚀 <b>Upgrade now and dive deeper into DeFi intelligence!</b>",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
@@ -1403,11 +943,7 @@ async def handle_deployer_wallet_scan(update: Update, context: ContextTypes.DEFA
         await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
             "🔐 <b>Deployer Wallet Scanning</b> is an advanced feature available only to <b>Premium</b> users.\n"
-            "This feature reveals the original wallet that launched the token and provides:\n"
-            "• A full list of other tokens they’ve deployed 🪙\n"
-            "• Performance stats including ATH market caps 📊\n"
-            "• Insight into how many X’s they did 📈\n\n"
-            "💡 Perfect for spotting patterns and identifying smart (or shady) deployers early!\n\n"
+            "This feature shows the deployer wallet, tokens they've launched, ATH market caps, and how many X’s they did — perfect for spotting trends and smart deployers early.\n\n"
             "💎 <b>Upgrade to Premium</b> now to unlock this and many more pro features!",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
@@ -1432,16 +968,8 @@ async def handle_top_holders(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "🔍 <b>Top Holders & Whale Analysis</b> is an advanced feature available only to <b>Premium</b> users. It gives you the insight:\n"
-            "• The top 10 wallets holding a token 👑\n"
-            "• Dev and whale activity (when they buy/sell) 📉📈\n"
-            "• Early warnings of dumps or big moves 📡\n\n"
-            "This powerful tool is only available for <b>Premium users</b>.\n\n"
-            "💎 <b>Upgrade to Premium</b> and gain full access to:\n"
-            "• Real-time tracking of whales & top holders\n"
-            "• Token movement alerts\n"
-            "• Unlimited scans and insights\n\n"
-            "🚀 Stay one step ahead with DeFi intelligence!",
+            "🔍 <b>Top Holders & Whale Analysis</b> is an advanced feature available only to <b>Premium</b> users.\n" 
+            "💎 <b>Upgrade to Premium</b> for full access to whale tracking, token alerts, unlimited scans, and deeper DeFi insights — stay ahead of the game! 🚀",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
@@ -1465,19 +993,12 @@ async def handle_high_net_worth_holders(update: Update, context: ContextTypes.DE
         
         await query.message.reply_text(
             "⭐ <b>Premium Feature</b>\n\n"
-            "💰 <b>High Net Worth Holders</b> analysis shows you:\n"
-            "• Wallets holding over $10,000+ in value 💸\n"
-            "• Total token worth, quantity held, and average hold time ⏳\n"
-            "• Wallets that move markets – instantly spot smart money moves 🧠\n\n"
-            "This elite-level insight is exclusive to <b>Premium users</b>.\n\n"
-            "💎 <b>Upgrade to Premium</b> to unlock:\n"
-            "• Full visibility into major token holders\n"
-            "• Premium-level scan tools and unlimited access\n"
-            "• Strategy-altering on-chain data\n\n"
-            "🔓 Get access to what whales are doing behind the scenes!",
+            "💰 <b>High Net Worth Holders</b> analysis is a powerful tool exclusive to <b>Premium</b> users. It reveals wallets holding over $10K+, with insights into token value, quantities held, and average holding time.\n\n"
+            "💎 <b>Upgrade to Premium</b> for full access to whale tracking, token alerts, unlimited scans, and deeper DeFi insights — stay ahead of the game! 🚀",
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
+
         return
     
     # Prompt user to select a chain
