@@ -8,7 +8,7 @@ A powerful Telegram bot for analyzing DeFi tokens, tracking wallets, and discove
 Stay ahead in the crypto game with powerful analytics, wallet tracking, and market insights. 📊💰
 
 <p align="center">
-  <img src="./src/image/main_menu.png" alt="Main Menu">
+  <img src="https://github.com/dodger213/Crypto-DeFi-Analyze-Telegram-Bot/blob/main/src/image/main_menu.PNG" alt="Main Menu">
 </p>
 
 ## ✨ **What can I do for you?**
