@@ -260,10 +260,10 @@ def format_first_buyers_response(first_buyers: List[Dict[str, Any]],
     
     for i, buyer in enumerate(first_buyers[:10], 1):
         response += (
-            f"{i}. `{buyer['address'][:6]}...{buyer['address'][-4:]}`\n"
-            f"   Buy Amount: {buyer.get('buy_amount', 'N/A')} tokens\n"
-            f"   Buy Value: ${buyer.get('buy_value', 'N/A')}\n"
-            f"   Current PNL: {buyer.get('pnl', 'N/A')}%\n\n"
+            f"{i}. `{buyer['maker']}`\n"
+            f"   Buy Amount: {buyer.get('base_amount', 'N/A')} tokens\n"
+            f"   Buy Value: ${buyer.get('amount_usd', 'N/A')}\n"
+            f"   Current PNL: {buyer.get('realized_profit', 'N/A')}%\n\n"
         )
     
     keyboard = [
@@ -272,8 +272,8 @@ def format_first_buyers_response(first_buyers: List[Dict[str, Any]],
     
     return response, keyboard
 
-def format_profitable_wallets_response(profitable_wallets: List[Dict[str, Any]], 
-                                      token_data: Dict[str, Any], 
+def format_profitable_wallets_response(profitable_wallets: List[Dict[str, Any]],
+                                      token_data: Dict[str, Any],
                                       token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
     """
     Format the response for most profitable wallets analysis
@@ -292,12 +292,23 @@ def format_profitable_wallets_response(profitable_wallets: List[Dict[str, Any]],
     )
     
     for i, wallet in enumerate(profitable_wallets[:10], 1):
+        # Format the trader ID (wallet address)
+        trader_id = wallet.get('trader_id', wallet.get('address', 'Unknown'))
+        
+        # Calculate ROI percentage
+        total_buy_usd = wallet.get('total_buy_usd', 0)
+        roi_percentage = 0
+        if total_buy_usd > 0:
+            roi_percentage = round((wallet.get('total_profit', 0) / total_buy_usd) * 100, 2)
+        
         response += (
-            f"{i}. `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Buy Amount: {wallet.get('buy_amount', 'N/A')} tokens\n"
-            f"   Sell Amount: {wallet.get('sell_amount', 'N/A')} tokens\n"
-            f"   Profit: ${wallet.get('profit', 'N/A')}\n"
-            f"   ROI: {wallet.get('roi', 'N/A')}%\n\n"
+            f"{i}. `{trader_id[:6]}...{trader_id[-4:]}`\n"
+            f"   Total Trades: {wallet.get('total_trades', 'N/A')}\n"
+            f"   Win Rate: {round(wallet.get('win_rate', 0) * 100, 2)}%\n"
+            f"   Buy Amount: ${wallet.get('total_buy_usd', 'N/A'):,.2f}\n"
+            f"   Sell Amount: ${wallet.get('total_sell_usd', 'N/A'):,.2f}\n"
+            f"   Profit: ${wallet.get('total_profit', 'N/A'):,.2f}\n"
+            f"   ROI: {roi_percentage}%\n\n"
         )
     
     keyboard = [
@@ -306,45 +317,36 @@ def format_profitable_wallets_response(profitable_wallets: List[Dict[str, Any]],
     
     return response, keyboard
 
-def format_ath_response(token_data: Dict[str, Any], token_data_again: Dict[str, Any], token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+def format_ath_response(ath_data: Dict[str, Any], token_info: Dict[str, Any], token_address: str) -> Tuple[str, List[List[InlineKeyboardButton]]]:
     """
     Format the response for ATH analysis
     
     Args:
-        token_data: Token information (first parameter from handle_token_analysis_input)
-        token_data_again: Same token information (second parameter from handle_token_analysis_input)
+        ath_data: ATH information (first parameter from handle_token_analysis_input)
+        token_info: token information (second parameter from handle_token_analysis_input)
         token_address: The token address
         
     Returns:
         Tuple of (formatted response text, keyboard buttons)
     """
-    # Note: token_data and token_data_again are the same in this case
     # We're using this signature to match the expected format for handle_token_analysis_input
     
     # Calculate percentage from ATH
-    current_mc = token_data.get('current_market_cap', 0)
-    ath_mc = token_data.get('ath_market_cap', 0)
+    cur_mcap = ath_data.get('cur_mcap', 0)
+    ath_mcap = ath_data.get('ath_mcap', 0)
     
-    if current_mc > 0 and ath_mc > 0:
-        percent_from_ath = round((current_mc / ath_mc) * 100, 2)
+    if cur_mcap > 0 and ath_mcap > 0:
+        percent_from_ath = round((cur_mcap / ath_mcap) * 100, 2)
     else:
         percent_from_ath = "N/A"
     
     response = (
-        f"📈 <b>ATH Analysis for {token_data.get('name', 'Unknown Token')} ({token_data.get('symbol', 'N/A')})</b>\n\n"
+        f"📈 <b>ATH Analysis for {token_info.get('name', 'Unknown Token')} ({token_info.get('symbol', 'N/A')})</b>\n\n"
         f"Contract: `{token_address}`\n\n"
-        f"<b>Current Status:</b>\n"
-        f"• Current Price: ${token_data.get('current_price', 'N/A')}\n"
-        f"• Current Market Cap: ${format_number(token_data.get('current_market_cap', 'N/A'))}\n"
-        f"• Holders: {format_number(token_data.get('holders_count', 'N/A'))}\n\n"
-        f"<b>All-Time High:</b>\n"
-        f"• ATH Price: ${token_data.get('ath_price', 'N/A')}\n"
-        f"• ATH Market Cap: ${format_number(token_data.get('ath_market_cap', 'N/A'))}\n"
-        f"• ATH Date: {token_data.get('ath_date', 'N/A')}\n"
+        f"• Current Market Cap: ${format_number(ath_data.get('cur_mcap', 'N/A'))}\n"
+        f"• ATH Market Cap: ${format_number(ath_data.get('ath_mcap', 'N/A'))}\n"
+        f"• ATH Date: {ath_data.get('ath_date', 'N/A')}\n"
         f"• Current % of ATH: {percent_from_ath}%\n\n"
-        f"<b>Token Info:</b>\n"
-        f"• Launch Date: {token_data.get('launch_date', 'N/A')}\n"
-        f"• Liquidity: ${format_number(token_data.get('liquidity', 'N/A'))}"
     )
     
     keyboard = [
@@ -399,7 +401,7 @@ def format_deployer_wallet_scan_response(deployer_data: Dict[str, Any],
         response += (
             f"{i}. {token.get('name', 'Unknown')} ({token.get('symbol', 'N/A')})\n"
             f"   Deploy Date: {token.get('deploy_date', 'N/A')}\n"
-            f"   ATH Market Cap: ${format_number(token.get('ath_market_cap', 'N/A'))}\n"
+            f"   ATH Market Cap: ${format_number(token.get('ath_mcap', 'N/A'))}\n"
             f"   X-Multiplier: {token.get('x_multiplier', 'N/A')}\n"
             f"   Status: {token.get('status', 'Unknown')}\n\n"
         )

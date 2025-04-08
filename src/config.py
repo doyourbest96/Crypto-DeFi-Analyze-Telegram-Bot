@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
+API_BASE_URL = os.getenv("API_SERVER_URL", "http://localhost:8000")
+
 # Bot configuration
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 ADMIN_USER_IDS = list(map(int, os.getenv("ADMIN_USER_IDS", "").split(",")))
@@ -17,7 +19,7 @@ SUBSCRIPTION_WALLET_ADDRESS=os.getenv("SUBSCRIPTION_WALLET_ADDRESS")
 
 # Database configuration
 MONGODB_URI = os.getenv("MONGODB_URI")
-DB_NAME = os.getenv("DB_NAME", "crypto_defi_analyze_bot")
+DB_NAME = os.getenv("DB_NAME", "defiscope")
 
 # Rate limits for free users
 FREE_TOKEN_SCANS_DAILY=3

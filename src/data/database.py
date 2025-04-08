@@ -10,6 +10,9 @@ from config import MONGODB_URI, DB_NAME, SUBSCRIPTION_WALLET_ADDRESS
 from data.models import User, UserScan, TokenData, WalletData, TrackingSubscription, KOLWallet
 from services.payment import get_plan_payment_details
 
+from api.token_api import *
+from api.wallet_api import *
+
 _db: Optional[Database] = None
 
 def init_database() -> bool:
@@ -429,7 +432,7 @@ def record_referral(referrer_id: int, referred_id: int) -> None:
         {"user_id": referrer_id},
         {"$inc": {"referral_count": 1}}
     )
-
+    
 def update_user_premium_status(
     user_id: int,
     is_premium: bool,
@@ -501,20 +504,11 @@ async def get_token_first_buyers(token_address: str, chain:str) -> List[Dict[str
     """
     logging.info(f"Placeholder: get_token_first_buyers called for {token_address}")
         
-    # Generate some dummy first buyers data
-    first_buyers = []
-    for i in range(10):
-        # Generate a random wallet address
-        wallet = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
-        
-        first_buyers.append({
-            "address": wallet,
-            "buy_amount": round(random.uniform(1000, 10000), 2),
-            "buy_value": round(random.uniform(0.5, 5), 2),
-            "pnl": round(random.uniform(-50, 300), 2)
-        })
+    response = await fetch_first_buyers(chain, token_address)
+
+    first_buyers = response.get("unique_buyers")
     
-    return first_buyers
+    return first_buyers[:5]
 
 async def get_token_profitable_wallets(token_address: str, chain:str) -> List[Dict[str, Any]]:
     """
@@ -529,24 +523,11 @@ async def get_token_profitable_wallets(token_address: str, chain:str) -> List[Di
     logging.info(f"Placeholder: get_token_profitable_wallets called for {token_address}")
     
     # Generate some dummy profitable wallets data
-    profitable_wallets = []
-    for i in range(10):
-        # Generate a random wallet address
-        wallet = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
-        
-        buy_amount = round(random.uniform(5000, 50000), 2)
-        sell_amount = round(buy_amount * random.uniform(0.7, 0.95), 2)
-        profit = round(random.uniform(1000, 10000), 2)
-        
-        profitable_wallets.append({
-            "address": wallet,
-            "buy_amount": buy_amount,
-            "sell_amount": sell_amount,
-            "profit": profit,
-            "roi": round(random.uniform(50, 500), 2)
-        })
+    response = await fetch_token_profitable_wallets(chain, token_address)
+
+    profitable_wallets = response.get("wallets")
     
-    return profitable_wallets
+    return profitable_wallets[:5]
 
 async def get_ath_data(token_address: str, chain:str) -> Dict[str, Any]:
     """
@@ -560,46 +541,19 @@ async def get_ath_data(token_address: str, chain:str) -> Dict[str, Any]:
     """
     
     logging.info(f"Placeholder: get_ath_data called for {token_address}")
-    
-    # Generate random token data for demonstration purposes
-    token_symbols = ["USDT", "WETH", "PEPE", "SHIB", "DOGE", "LINK", "UNI", "AAVE", "COMP", "SNX"]
-    token_names = ["Tether", "Wrapped Ethereum", "Pepe", "Shiba Inu", "Dogecoin", "Chainlink", "Uniswap", "Aave", "Compound", "Synthetix"]
-    
-    # Pick a random name and symbol
-    index = random.randint(0, len(token_symbols) - 1)
-    symbol = token_symbols[index]
-    name = token_names[index]
-    
-    # Generate random price and market cap
-    current_price = round(random.uniform(0.00001, 100), 6)
-    market_cap = round(current_price * random.uniform(1000000, 10000000000), 2)
-    
-    # Generate random ATH data
-    ath_multiplier = random.uniform(1.5, 10)
-    ath_price = round(current_price * ath_multiplier, 6)
-    ath_market_cap = round(market_cap * ath_multiplier, 2)
-    
-    # Generate random dates
-    now = datetime.now()
-    launch_date = (now - timedelta(days=random.randint(30, 365))).strftime("%Y-%m-%d")
-    ath_date = (now - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
-    
+
+    response = await fetch_market_cap(chain, token_address.lower())
+
+    age = response.get("age")
+    cur_mcap = response.get("current_mc")
+    ath_mcap = response.get("max_mc")
+    ath_date = response.get("ath_date")
     # Create ATH data dictionary
     ath_data = {
-        "address": token_address,
-        "name": name,
-        "symbol": symbol,
-        "current_price": current_price,
-        "current_market_cap": market_cap,
-        "holders_count": random.randint(100, 10000),
-        "liquidity": round(random.uniform(10000, 1000000), 2),
-        "launch_date": launch_date,
-        "ath_price": ath_price,
+        "age": age,
+        "cur_mcap": round(cur_mcap, 2),
+        "ath_mcap": round(ath_mcap, 2),
         "ath_date": ath_date,
-        "ath_market_cap": ath_market_cap,
-        "percent_from_ath": round((current_price / ath_price) * 100, 2),
-        "days_since_ath": random.randint(1, 30),
-        "ath_volume": round(random.uniform(100000, 10000000), 2)
     }
     
     return ath_data

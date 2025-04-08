@@ -22,7 +22,7 @@ from services.notification import (
     format_profitable_wallet_notification
 )
 
-from utils import get_token_info
+# from utils import get_token_info
 
 # Configure web3 connection
 # This would be replaced with your actual blockchain node connection
@@ -314,6 +314,8 @@ async def start_blockchain_monitor():
 async def monitor_blockchain_events():
     """Background task to monitor blockchain events and send notifications"""
     logging.info("Blockchain monitor running")
+    
+    from utils import get_token_info
     
     # Keep track of processed transactions to avoid duplicate notifications
     processed_txs = set()
