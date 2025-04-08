@@ -20,14 +20,12 @@ from utils import *
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle all callback queries from inline keyboards"""
     query = update.callback_query
-    await query.answer()  # Answer the callback query to stop the loading animation
+    await query.answer()  
     
     callback_data = query.data
     
-    # Log the callback data for debugging
     logging.info(f"Callback query received: {callback_data}")
     
-    # Route to appropriate handler based on callback data
     if callback_data == "start_menu" or callback_data == "main_menu":
         await handle_start_menu(update, context)
     elif callback_data == "back":
@@ -129,14 +127,11 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle expected inputs from conversation states"""
-    # Check what the bot is expecting
     expecting = context.user_data.get("expecting")
  
     if not expecting:
-        # Not in a conversation state, ignore
         return
    
-    # Clear the expecting state
     del context.user_data["expecting"]
 
     if expecting == "first_buyers_token_address":
@@ -243,7 +238,6 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
             no_data_message_text="❌ Could not find any tokens deployed by this wallet."
         )
 
-    # Add these cases to the handle_expected_input function
     elif expecting == "track_wallet_buy_sell_address":
         wallet_address = update.message.text.strip()
         await handle_tracking_input(update, context, "wallet_trades", wallet_address)
@@ -255,6 +249,27 @@ async def handle_expected_input(update: Update, context: ContextTypes.DEFAULT_TY
     elif expecting == "track_profitable_wallets_token":
         token_address = update.message.text.strip()
         await handle_tracking_input(update, context, "token_profitable_wallets", token_address)
+
+    elif expecting == "kol_wallet_name":
+        kol_wallet_name = update.message.text.strip()
+        context.user_data["kol_wallet_name"] = kol_wallet_name
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("1 Day", callback_data="kol_period_1"),
+                InlineKeyboardButton("7 Days", callback_data="kol_period_7"),
+                InlineKeyboardButton("30 Days", callback_data="kol_period_30")
+            ],
+            [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(
+            f"📊 <b>KOL Wallet: {kol_wallet_name}</b>\n\n"
+            f"Please select the time period for profitability analysis:",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
 
 # help handlers
 async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -309,7 +324,6 @@ async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             general_help_text,
             reply_markup=reply_markup,
@@ -317,13 +331,11 @@ async def handle_general_help(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     except Exception as e:
         logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
         await query.message.reply_text(
             general_help_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
         try:
             await query.message.delete()
         except:
@@ -372,7 +384,6 @@ async def handle_token_analysis_help(update: Update, context: ContextTypes.DEFAU
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             token_analysis_help_text,
             reply_markup=reply_markup,
@@ -380,13 +391,11 @@ async def handle_token_analysis_help(update: Update, context: ContextTypes.DEFAU
     )
     except Exception as e:
         logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
         await query.message.reply_text(
             token_analysis_help_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
         try:
             await query.message.delete()
         except:
@@ -425,7 +434,6 @@ async def handle_wallet_analysis_help(update: Update, context: ContextTypes.DEFA
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             wallet_analysis_help_text,
             reply_markup=reply_markup,
@@ -433,13 +441,13 @@ async def handle_wallet_analysis_help(update: Update, context: ContextTypes.DEFA
     )
     except Exception as e:
         logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
+
         await query.message.reply_text(
             wallet_analysis_help_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
+        
         try:
             await query.message.delete()
         except:
@@ -472,7 +480,6 @@ async def handle_tracking_and_monitoring_help(update: Update, context: ContextTy
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             tracking_and_monitoring_help_text,
             reply_markup=reply_markup,
@@ -480,13 +487,13 @@ async def handle_tracking_and_monitoring_help(update: Update, context: ContextTy
     )
     except Exception as e:
         logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
+
         await query.message.reply_text(
             tracking_and_monitoring_help_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
+        
         try:
             await query.message.delete()
         except:
@@ -518,7 +525,6 @@ async def handle_kol_wallets_help(update: Update, context: ContextTypes.DEFAULT_
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             kol_wallets_help_text,
             reply_markup=reply_markup,
@@ -526,13 +532,13 @@ async def handle_kol_wallets_help(update: Update, context: ContextTypes.DEFAULT_
     )
     except Exception as e:
         logging.error(f"Error in handle_back: {e}")
-        # If editing fails, send a new message
+
         await query.message.reply_text(
             kol_wallets_help_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
+        
         try:
             await query.message.delete()
         except:
@@ -543,7 +549,7 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     """Handle the main menu display"""
 
     if "default_network" not in context.user_data:
-        context.user_data["default_network"] = "eth"  # Set Ethereum as default
+        context.user_data["default_network"] = "eth"
 
     selected_network = context.user_data.get("default_network")
     network_display = {
@@ -552,7 +558,7 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         "bsc": "🔶 BSC"
     }
     
-    # If no network is selected, show network selection menu first
+
     if not selected_network:
         await handle_select_network(update, context)
         return
@@ -587,14 +593,10 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             InlineKeyboardButton(f"🔗 Network ({network_display.get(selected_network, selected_network.upper())})", callback_data="select_network"),
             InlineKeyboardButton("❓ Help", callback_data="general_help"),
         ],
-        # [
-        #     InlineKeyboardButton("🔙 Back", callback_data="back")
-        # ],
     ]
     
     reply_markup = InlineKeyboardMarkup(keyboard_main)
     
-    # Check if this is a callback query or a direct message
     if update.callback_query:
         try:
             await update.callback_query.edit_message_text(
@@ -623,16 +625,13 @@ async def handle_start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def handle_select_network(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle network selection from main menu"""
     query = update.callback_query
-    
-    # Get currently selected network
+
     current_network = context.user_data.get("default_network", "eth")  # Default to Ethereum if none set
     
-    # Create network button labels with current indicator
     eth_label = "🌐 Ethereum (Current)" if current_network == "eth" else "🌐 Ethereum" 
     base_label = "🛡️ Base (Current)" if current_network == "base" else "🛡️ Base" 
     bsc_label = "🔶 BSC (Current)" if current_network == "bsc" else "🔶 BSC"
     
-    # Create keyboard with network options
     keyboard = [
         [
             InlineKeyboardButton(eth_label, callback_data="set_default_network_eth"),
@@ -643,7 +642,6 @@ async def handle_select_network(update: Update, context: ContextTypes.DEFAULT_TY
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Show network selection message
     await query.message.reply_text(
         "🔗 <b>Select Blockchain Network</b>\n\n"
         "Please choose the blockchain network you'd like to use for token and wallet analyses. Each chain has its own ecosystem, speed, and opportunities:\n\n"
@@ -1955,14 +1953,42 @@ async def handle_remove_tracking(update: Update, context: ContextTypes.DEFAULT_T
 # KOL wallets handlers
 async def handle_kol_wallet_profitability(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle KOL wallet profitability button callback"""
+    query = update.callback_query
+    user = await check_callback_user(update)
     
-    await handle_period_selection(
-        update=update,
-        context=context,
-        feature_info="KOL Wallet Profitability Analysis",
-        scan_type="kol_wallet_profitability_scan",
-        callback_prefix="kol_period"
+    has_reached_limit, current_count = await check_rate_limit_service(
+        user.user_id, "kol_wallet_profitability_scan", FREE_TOKEN_SCANS_DAILY
     )
+    
+    if has_reached_limit and not user.is_premium:
+        keyboard = [
+            [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
+            [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.message.reply_text(
+            f"⚠️ <b>Daily Limit Reached</b>\n\n"
+            f"🧾 You've used <b>{current_count}</b> out of <b>{FREE_TOKEN_SCANS_DAILY}</b> free daily scans for <b>KOL Wallet Analysis</b>.\n"
+            f"This feature lets you track the performance of known wallets and their trading behavior.\n\n"
+            f"💎 <b>Upgrade to Premium</b> for unlimited scans and deeper DeFi intelligence.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.message.reply_text(
+        "📢 <b>KOL Wallet Profitability Analysis</b>\n\n"
+        "Please enter the name of the Key Opinion Leader(KOL) wallet you want to analyze.\n\n"
+        "Example: `Binance`, `Alameda`, etc.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    
+    context.user_data["expecting"] = "kol_wallet_name"
 
 async def handle_track_whale_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle track whale wallets button callback"""
@@ -1973,7 +1999,7 @@ async def handle_track_whale_wallets(update: Update, context: ContextTypes.DEFAU
     if not user.is_premium:
         keyboard = [
             [InlineKeyboardButton("💎 Upgrade to Premium", callback_data="premium_info")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            [InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1986,11 +2012,15 @@ async def handle_track_whale_wallets(update: Update, context: ContextTypes.DEFAU
         )
         return
     
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     # Prompt user to enter token address
     await query.edit_message_text(
         "Please send me the token contract address to track its whale wallets.\n\n"
         "Example: `0x1234...abcd`\n\n"
         "I'll set up tracking for the top holders of this token.",
+        reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN
     )
     
@@ -1999,21 +2029,41 @@ async def handle_track_whale_wallets(update: Update, context: ContextTypes.DEFAU
 
 async def handle_kol_period_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle selection of time period for KOL wallet profitability analysis"""
+    query = update.callback_query
+    
+    kol_wallet_name = context.user_data.get("kol_wallet_name")
+    
+    if not kol_wallet_name:
+        await query.answer("Please provide a Key Opinion Leader(KOL) wallet name first", show_alert=True)
+        await handle_kol_wallet_profitability(update, context)
+        return
+    
+    selected_period = int(query.data.replace("kol_period_", ""))
+    
+    async def get_kol_data_with_name(days, limit, chain):
+        return await get_kol_wallet_profitability(
+            days=days,
+            limit=limit,
+            chain=chain,
+            kol_name=kol_wallet_name
+        )
     
     await handle_period_selection_callback(
         update=update,
         context=context,
-        get_data_func=get_kol_wallet_profitability,
+        get_data_func=get_kol_data_with_name,  
         format_response_func=format_kol_wallet_profitability_response,
         scan_count_type="kol_wallet_profitability_scan",
-        processing_message_text="🔍 Analyzing KOL wallets profitability over the last {days} days... This may take a moment.",
-        error_message_text="❌ An error occurred while analyzing KOL wallets. Please try again later.",
-        no_data_message_text="❌ Could not find KOL wallet profitability data for this period.",
+        processing_message_text=f"🔍 Analyzing {kol_wallet_name} wallet profitability over the last {selected_period} days... This may take a moment.",
+        error_message_text=f"❌ An error occurred while analyzing {kol_wallet_name} wallet. Please try again later.",
+        no_data_message_text=f"❌ Could not find profitability data for {kol_wallet_name} wallet in this period.",
         free_limit=FREE_RESPONSE_DAILY,
         premium_limit=PREMIUM_RESPONSE_DAILY
     )
-
-
+    
+    # Clear the KOL wallet name after processing
+    if "kol_wallet_name" in context.user_data:
+        del context.user_data["kol_wallet_name"]
 
 
 
@@ -2149,7 +2199,6 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Try to edit the current message
         await query.edit_message_text(
             payment_text,
             reply_markup=reply_markup,
@@ -2197,13 +2246,13 @@ async def handle_premium_purchase(update: Update, context: ContextTypes.DEFAULT_
         
     except Exception as e:
         logging.error(f"Error in handle_premium_purchase: {e}")
-        # If editing fails, send a new message
+
         await query.message.reply_text(
             payment_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
-        # Delete the original message if possible
+        
         try:
             await query.message.delete()
         except:
