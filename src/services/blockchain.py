@@ -289,8 +289,6 @@ async def monitor_blockchain_events():
 
     from utils import get_token_info
     
-    from utils import get_token_info
-    
     # Keep track of processed transactions to avoid duplicate notifications
     processed_txs = set()
     

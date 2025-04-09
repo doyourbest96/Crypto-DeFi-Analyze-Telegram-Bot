@@ -998,7 +998,7 @@ async def handle_setup_whale_tracking(update: Update, context: ContextTypes.DEFA
     
     try:
         chain=context.user_data.get("default_network", "eth")
-        token_info = await get_token_info(token_address)
+        token_info = await get_token_info(token_address, chain)
         
         top_holders = await get_token_top_holders(token_address, chain)
         
@@ -1892,7 +1892,8 @@ async def handle_profitable_wallets_tracking(update: Update, context: ContextTyp
     
     try:
         # Get token info
-        token_info = await get_token_info(token_address)
+        chain=context.user_data.get("default_network", "eth")
+        token_info = await get_token_info(token_address, chain)
         
         if not token_info:
             await processing_message.edit_text(

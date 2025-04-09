@@ -465,12 +465,24 @@ def format_top_holders_response(top_holders: List[Dict[str, Any]],
     # Add top holders information
     for holder in top_holders:
         wallet_type = holder.get('wallet_type', 'Unknown')
-        exchange_info = f" ({holder.get('exchange_name', '')})" if wallet_type == "Exchange" else ""
+        exchange_info = f" ({holder.get('exchange_name', '')})" if wallet_type == "Exchange" and holder.get('exchange_name') else ""
+        
+        # Format percentage with proper rounding
+        percentage = holder.get('percentage', 0)
+        percentage_display = f"{round(percentage, 2)}%" if isinstance(percentage, (int, float)) else "N/A%"
+        
+        # Format token amount with proper number formatting
+        token_amount = holder.get('token_amount', 'N/A')
+        token_amount_display = format_number(token_amount) if token_amount != 'N/A' else 'N/A'
+        
+        # Format USD value with proper number formatting
+        usd_value = holder.get('usd_value', 'N/A')
+        usd_value_display = format_number(usd_value) if usd_value != 'N/A' else 'N/A'
         
         response += (
-            f"{holder.get('rank', '?')}. `{holder['address'][:6]}...{holder['address'][-4:]}`{exchange_info}\n"
-            f"   Tokens: {format_number(holder.get('token_amount', 'N/A'))} ({holder.get('percentage', 'N/A')}%)\n"
-            f"   Value: ${format_number(holder.get('usd_value', 'N/A'))}\n"
+            f"{holder.get('rank', '?')}. `{holder['address']}`{exchange_info}\n"
+            f"   Tokens: {token_amount_display} ({percentage_display})\n"
+            f"   Value: ${usd_value_display}\n"
             f"   Holding since: {holder.get('holding_since', 'N/A')}\n\n"
         )
     

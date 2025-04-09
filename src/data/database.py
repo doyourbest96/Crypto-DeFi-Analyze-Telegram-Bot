@@ -640,54 +640,55 @@ async def get_deployer_wallet_scan_data(token_address: str, chain:str) -> Dict[s
         logging.error(f"Error getting deployer wallet scan data: {e}")
         return None
 
-async def get_token_top_holders(token_address: str, chain:str) -> List[Dict[str, Any]]:
+async def get_token_top_holders(token_address: str, chain: str) -> List[Dict[str, Any]]:
     """
-    Placeholder function for getting top holders data for a specific token
+    Get top holders data for a specific token
     
     Args:
         token_address: The token contract address
+        chain: The blockchain network
     
     Returns:
         List of dictionaries containing top holder data
     """
-    logging.info(f"Placeholder: get_token_holders called for {token_address}")
+    logging.info(f"Getting top holders for {token_address} on {chain}")
     
-    # Generate some dummy top holders data
+    # Fetch data from API or service
+    response = await fetch_token_holders(chain, token_address)
+    
     top_holders = []
-    total_supply = random.uniform(1000000, 1000000000)
     
-    # Generate top 10 holders
-    for i in range(10):
-        # Generate a random wallet address
-        wallet = "0x" + ''.join(random.choices('0123456789abcdef', k=40))
+    # Process the response data
+    for i, holder in enumerate(response[:10], 1):  # Limit to top 10 holders
+        # Extract and format the most important fields
+        wallet_type = "Exchange" if any(tag in holder.get('tags', []) for tag in ["exchange", "cex", "dex"]) else "Whale"
         
-        # Calculate percentage (decreasing as rank increases)
-        percentage = round(random.uniform(30, 5) / (i + 1), 2)
+        # Calculate holding since date from timestamp if available
+        holding_since = "N/A"
+        if holder.get('start_holding_at'):
+            try:
+                holding_since = datetime.fromtimestamp(holder['start_holding_at']).strftime("%Y-%m-%d")
+            except:
+                pass
         
-        # Calculate token amount based on percentage
-        token_amount = round((percentage / 100) * total_supply, 2)
-        
-        # Calculate USD value
-        token_price = random.uniform(0.0001, 0.1)
-        usd_value = round(token_amount * token_price, 2)
-        
-        # Determine if it's a DEX or CEX
-        is_exchange = random.choice([True, False])
-        exchange_type = random.choice(["Uniswap V3", "Uniswap V2", "SushiSwap", "PancakeSwap"]) if is_exchange else None
-        
-        # Determine wallet type
-        wallet_type = "Exchange" if is_exchange else random.choice(["Whale", "Investor", "Team", "Unknown"])
+        # Format last active date
+        last_transaction = "N/A"
+        if holder.get('last_active_timestamp'):
+            try:
+                last_transaction = datetime.fromtimestamp(holder['last_active_timestamp']).strftime("%Y-%m-%d")
+            except:
+                pass
         
         top_holders.append({
-            "rank": i + 1,
-            "address": wallet,
-            "token_amount": token_amount,
-            "percentage": percentage,
-            "usd_value": usd_value,
+            "rank": i,
+            "address": holder.get('address', ''),
+            "token_amount": holder.get('amount_cur', 0),
+            "percentage": holder.get('amount_percentage', 0) * 100,  # Convert to percentage
+            "usd_value": holder.get('usd_value', 0),
             "wallet_type": wallet_type,
-            "exchange_name": exchange_type,
-            "holding_since": (datetime.now() - timedelta(days=random.randint(1, 365))).strftime("%Y-%m-%d"),
-            "last_transaction": (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d")
+            "exchange_name": holder.get('name'),
+            "holding_since": holding_since,
+            "last_transaction": last_transaction
         })
     
     return top_holders
