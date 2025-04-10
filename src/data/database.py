@@ -1078,9 +1078,17 @@ async def get_kol_wallet_profitability(days: int = 7, limit: int = 10, chain: st
         
         # Filter by KOL name if provided
         if kol_name:
-            wallets = [w for w in wallets if w.get("name", "").lower() == kol_name.lower() or 
-                                             w.get("twitter_name", "").lower() == kol_name.lower() or
-                                             w.get("ens", "").lower() == kol_name.lower()]
+            filtered_wallets = []
+            for w in wallets:
+                name = w.get("name") or ""
+                twitter_name = w.get("twitter_name") or ""
+                ens = w.get("ens") or ""
+                
+                if (name.lower() == kol_name.lower() or 
+                    twitter_name.lower() == kol_name.lower() or 
+                    ens.lower() == kol_name.lower()):
+                    filtered_wallets.append(w)
+            wallets = filtered_wallets
         
         # Format the wallet data
         formatted_wallets = []
@@ -1103,7 +1111,8 @@ async def get_kol_wallet_profitability(days: int = 7, limit: int = 10, chain: st
                 "avg_holding_time": wallet.get(f"avg_holding_period_{days}d", 0) if days in [7, 30] else wallet.get("avg_holding_period_7d", 0),
                 "last_active": wallet.get("last_active_readable", ""),
                 "avatar": wallet.get("avatar", ""),
-                "chain": chain
+                "chain": chain,
+                "period": days
             }
             
             formatted_wallets.append(formatted_wallet)

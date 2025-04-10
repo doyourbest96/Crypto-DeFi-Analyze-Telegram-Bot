@@ -866,11 +866,22 @@ def format_kol_wallet_profitability_response(data: list) -> tuple:
     Returns:
         Tuple of (formatted response text, keyboard buttons)
     """
+    # Handle empty data case
     if not data:
-        return "No KOL wallet data found for the selected period.", [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
+        response = (
+            "❌ <b>No KOL Wallet Data Found</b>\n\n"
+            "No KOL wallet profitability data is available for the selected period. "
+            "This could be due to:\n"
+            "• No trading activity in this period\n"
+            "• API data not yet available\n"
+            "• Temporary service issue\n\n"
+            "Please try a different time period or check back later."
+        )
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
+        return response, keyboard
     
     # Get period from first wallet (all should have same period)
-    period = data[0].get("period", 30) if data else 30
+    period = data[0].get("period", 30)
     
     # Determine chain from first wallet
     chain = data[0].get("chain", "eth")
