@@ -866,20 +866,61 @@ def format_kol_wallet_profitability_response(data: list) -> tuple:
     Returns:
         Tuple of (formatted response text, keyboard buttons)
     """
+    if not data:
+        return "No KOL wallet data found for the selected period.", [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
+    
+    # Get period from first wallet (all should have same period)
     period = data[0].get("period", 30) if data else 30
     
+    # Determine chain from first wallet
+    chain = data[0].get("chain", "eth")
+    chain_display = {
+        "eth": "Ethereum",
+        "base": "Base",
+        "bsc": "BSC"
+    }.get(chain, chain.upper())
+    
     response = (
-        f"👑 <b>KOL Wallets Profitability Analysis - {period} Day Overview</b>\n\n"
-        f"🧬 <b>Total KOL Wallets Analyzed:</b> A total of {len(data)} influential KOL (Key Opinion Leader) wallets were included in this report, offering a unique glimpse into how the most impactful traders and investors have been performing during the selected period.\n\n"
+        f"👑 <b>KOL Wallets Profitability Analysis - {period} Day Overview on {chain_display}</b>\n\n"
+        f"🧬 <b>Total KOL Wallets Analyzed:</b> {len(data)} influential wallets were included in this report, "
+        f"offering insights into how the most impactful traders have been performing during the selected period.\n\n"
     )
 
     for i, wallet in enumerate(data, 1):
+        # Format wallet name with Twitter/ENS if available
+        name = wallet.get("name", "Unknown KOL")
+        twitter = wallet.get("twitter", "")
+        ens = wallet.get("ens", "")
+        
+        display_name = name
+        if twitter:
+            display_name += f" (@{twitter})"
+        elif ens:
+            display_name += f" ({ens})"
+            
+        # Format profit with proper currency symbol and formatting
+        profit = wallet.get("profit", 0)
+        profit_display = f"${profit:,.2f}" if isinstance(profit, (int, float)) else "N/A"
+        
+        # Format win rate with proper percentage
+        win_rate = wallet.get("win_rate", 0)
+        win_rate_display = f"{win_rate * 100:.1f}%" if isinstance(win_rate, (int, float)) else "N/A"
+        
         response += (
-            f"{i}. <b>{wallet.get('name', 'Unknown KOL')}</b>\n"
+            f"{i}. <b>{display_name}</b>\n"
             f"   Wallet: `{wallet['address'][:6]}...{wallet['address'][-4:]}`\n"
-            f"   Win Rate: {wallet.get('win_rate', 'N/A')}%\n"
-            f"   {period}-Day Profit: ${wallet.get('period_profit', 'N/A'):,.2f}\n\n"
+            f"   Win Rate: {win_rate_display}\n"
+            f"   {period}-Day Profit: {profit_display}\n"
         )
+        
+        # Add additional metrics if available
+        if wallet.get("transactions"):
+            response += f"   Transactions: {wallet.get('transactions')}\n"
+        
+        if wallet.get("tokens_traded"):
+            response += f"   Tokens Traded: {wallet.get('tokens_traded')}\n"
+            
+        response += "\n"
     
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="kol_wallets")]]
     

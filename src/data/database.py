@@ -1047,88 +1047,73 @@ async def get_tokens_deployed_by_wallet(wallet_address: str, chain: str = "eth")
         return []
 
 # kol wallet profitability
-async def get_kol_wallet_profitability(days: int, limit: int, chain: str = "eth", kol_name: str = None) -> list:
+async def get_kol_wallet_profitability(days: int = 7, limit: int = 10, chain: str = "eth", kol_name: str = None) -> list:
     """
-    Get KOL wallet profitability data (DUMMY IMPLEMENTATION)
+    Get KOL wallet profitability data
     
     Args:
-        days: Number of days to analyze
+        days: Number of days to analyze (1, 7, or 30)
         limit: Maximum number of results to return
-        chain: Blockchain to analyze
+        chain: Blockchain to analyze (eth, base, bsc)
         kol_name: Name of the specific KOL to filter by (optional)
         
     Returns:
         List of KOL wallet profitability data
     """
-
-    # List of mock KOL names
-    kol_names = [
-        "Vitalik Buterin", "CZ Binance", "SBF", "Arthur Hayes", 
-        "Justin Sun", "Elon Musk", "Crypto Cobain", "DeFi Dad",
-        "Crypto Messiah", "Crypto Whale", "DegenSpartan", "Tetranode",
-        "Hsaka", "Cobie", "DCinvestor", "ChainLinkGod"
-    ]
+    logging.info(f"Getting KOL wallet profitability for {days} days on {chain}")
     
-    # Generate random KOL wallet data
-    kol_wallets = []
-    
-    # If kol_name is provided, filter the list to only include that name (case-insensitive)
-    if kol_name:
-        filtered_names = [name for name in kol_names if kol_name.lower() in name.lower()]
-        # If no match found, add the provided name to ensure we return something
-        if not filtered_names and kol_name.strip():
-            filtered_names = [kol_name]
-        kol_names = filtered_names
-    
-    for i in range(min(len(kol_names), limit + 5)):  # Generate a few extra to sort later
-        # Create base wallet data
-        total_profit = random.uniform(10000, 1000000)
-        win_rate = random.uniform(40, 95)
+    try:
+        # Determine the order_by parameter based on days
+        order_by = f"pnl_{days}d" if days in [1, 7, 30] else "pnl_7d"
         
-        # Generate random address
-        address = "0x" + "".join(random.choice("0123456789abcdef") for _ in range(40))
+        # Fetch data from API
+        response = await fetch_kol_wallets(chain, order_by)
         
-        # Calculate period profit based on days
-        if days == 1:
-            period_profit = total_profit * random.uniform(0.01, 0.1)  # 1-10% of total profit
-        elif days == 7:
-            period_profit = total_profit * random.uniform(0.1, 0.4)   # 10-40% of total profit
-        else:  # 30 days
-            period_profit = total_profit * random.uniform(0.4, 1.0)   # 40-100% of total profit
+        if not response or "wallets" not in response:
+            logging.warning(f"No KOL wallet data found for chain {chain}")
+            return []
         
-        # Generate recent trades
-        recent_trades = []
-        for j in range(random.randint(3, 8)):
-            trade_date = datetime.now() - timedelta(days=random.randint(0, days))
-            token_names = ["ETH", "BTC", "LINK", "UNI", "AAVE", "MKR", "SNX", "YFI", "COMP", "SUSHI"]
-            action = "Buy" if random.random() > 0.4 else "Sell"
+        # Extract wallets from response
+        wallets = response.get("wallets", [])
+        
+        # Filter by KOL name if provided
+        if kol_name:
+            wallets = [w for w in wallets if w.get("name", "").lower() == kol_name.lower() or 
+                                             w.get("twitter_name", "").lower() == kol_name.lower() or
+                                             w.get("ens", "").lower() == kol_name.lower()]
+        
+        # Format the wallet data
+        formatted_wallets = []
+        for wallet in wallets[:limit]:
+            # Get the appropriate profit field based on days
+            profit_field = f"realized_profit_{days}d" if days in [1, 7, 30] else "realized_profit_7d"
+            pnl_field = f"pnl_{days}d" if days in [1, 7, 30] else "pnl_7d"
             
-            recent_trades.append({
-                "token": random.choice(token_names),
-                "action": action,
-                "amount": round(random.uniform(0.1, 100), 2),
-                "value": round(random.uniform(1000, 50000), 2),
-                "date": trade_date.strftime("%Y-%m-%d %H:%M")
-            })
+            formatted_wallet = {
+                "address": wallet.get("wallet_address", wallet.get("address", "")),
+                "name": wallet.get("name", "Unknown"),
+                "twitter": wallet.get("twitter_username", ""),
+                "ens": wallet.get("ens", ""),
+                "followers": wallet.get("followers_count", 0),
+                "profit": wallet.get(profit_field, 0),
+                "pnl": wallet.get(pnl_field, 0),
+                "win_rate": wallet.get(f"winrate_{days}d", 0) if days in [7, 30] else wallet.get("winrate_7d", 0),
+                "transactions": wallet.get("txs", 0),
+                "tokens_traded": wallet.get(f"token_num_{days}d", 0) if days in [7, 30] else wallet.get("token_num_7d", 0),
+                "avg_holding_time": wallet.get(f"avg_holding_period_{days}d", 0) if days in [7, 30] else wallet.get("avg_holding_period_7d", 0),
+                "last_active": wallet.get("last_active_readable", ""),
+                "avatar": wallet.get("avatar", ""),
+                "chain": chain
+            }
+            
+            formatted_wallets.append(formatted_wallet)
         
-        # Create wallet object
-        wallet = {
-            "name": kol_names[i] if i < len(kol_names) else f"Unknown KOL {i}",
-            "address": address,
-            "total_profit": total_profit,
-            "period_profit": period_profit,
-            "win_rate": round(win_rate, 1),
-            "total_trades": random.randint(50, 500),
-            "avg_position_size": round(random.uniform(5000, 100000), 2),
-            "chain": chain,
-            "period": days,
-            "recent_trades": recent_trades
-        }
+        # Sort by profit (descending)
+        formatted_wallets.sort(key=lambda x: x["profit"], reverse=True)
         
-        kol_wallets.append(wallet)
-    
-    # Sort by period profit
-    kol_wallets.sort(key=lambda x: x.get("period_profit", 0), reverse=True)
-    
-    # Limit results
-    return kol_wallets[:limit]
+        logging.info(f"Returning {len(formatted_wallets)} KOL wallets")
+        return formatted_wallets
+        
+    except Exception as e:
+        logging.error(f"Error getting KOL wallet profitability: {e}", exc_info=True)
+        return []

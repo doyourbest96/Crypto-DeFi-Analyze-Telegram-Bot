@@ -10,6 +10,12 @@ async def fetch_wallet_stats(chain, wallet_address, period="all"):
     logger.info(f"Fetching wallet stats for {chain}:{wallet_address} period:{period}")
     return await api_client.get(url)
 
+async def fetch_kol_wallets(chain, order_by="pnl_1d"):
+    """Fetch kol_wallets on a specific blockchain"""
+    url = f"{API_BASE_URL}/api/v1/kol_wallets/{chain}/{order_by}"
+    logger.info(f"Fetching kol_wallets for {chain}, order_by: {order_by}")
+    return await api_client.get(url)
+
 async def fetch_wallet_holding_time(chain, wallet_address):
     """Fetch wallet token holding time analysis"""
     url = f"{API_BASE_URL}/api/v1/wallet_holding_time/{chain}/{wallet_address}"
